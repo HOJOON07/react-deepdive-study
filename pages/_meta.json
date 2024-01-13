@@ -1,0 +1,15 @@
+{
+  "index": "리액트 딥다이브 스터디",
+  "-- Study": {
+    "type": "separator",
+    "title": "Study"
+  },
+  "1week": "",
+  "2week": "2week",
+  "3week": "3week",
+  "4week": "4week",
+  "5week": "5week",
+  "6week": "6week",
+  "7week": "7week",
+  "8week": "8week"
+}

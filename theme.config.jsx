@@ -26,6 +26,16 @@ export default {
             {title}
           </div>
         );
+      } else if (title.includes("발표")) {
+        return (
+          <div
+            style={{
+              fontSize: "1.2rem",
+            }}
+          >
+            {title}
+          </div>
+        );
       }
       return <> {title}</>;
     },

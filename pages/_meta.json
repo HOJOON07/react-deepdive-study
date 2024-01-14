@@ -5,11 +5,18 @@
     "title": "Study"
   },
   "1week": "",
-  "2week": "2week",
-  "3week": "3week",
-  "4week": "4week",
-  "5week": "5week",
-  "6week": "6week",
-  "7week": "7week",
-  "8week": "8week"
+  "2week": "",
+  "3week": "",
+  "4week": "",
+  "5week": "",
+  "6week": "",
+  "7week": "",
+  "8week": "",
+  "9week": "",
+  "10week": "",
+  "-- Presentaion": {
+    "type": "separator",
+    "title": "Presentation"
+  },
+  "presentation": "발표"
 }

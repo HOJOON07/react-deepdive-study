@@ -1,1 +1,231 @@
-## 정리하기 파일
+# 1장 왜 리액트인가?
+
+## 양방향(angular) vs 단방향(react)
+
+- 양방향은 추적이 어렵다
+- 단방향은 상태변화를 명시적으로 이뤄낸다.
+- 단방향은 코드의 규모가 증가하는 단점이 있다.
+
+## reconciliation
+
+- 불필요한 렌더링 생략
+- 리액트에서는 컴포넌트 간에 state는 격리되고 ui 트리에서 어떤 컴포넌트가 어떤 state에 속하는지를 추적한다. state를 언제 보존하고 언제 초기화할지 제어할 수 있다.
+- 브라우저의 렌더 트리(DOM, CSSOM)처럼 리액트도 트리 구조를 사용하여 UI를 관리하고 모델링한다.
+  - JSX로 UI 트리를 만들고 React DOM은 해당 UI트리와 일치하도록 브라우저 DOM 엘리먼트를 업데이트 한다.
+
+![](https://velog.velcdn.com/images/ghwns1007/post/cf509d73-43cb-497d-acd8-e25a3c32b87b/image.png)
+
+## state는 두 개의 개별 카운터이고 각 트리에서 고유한 위치에 렌더링된다. 즉, 각 컴포넌트는 완전히 분리된 state를 가진다.
+
+```jsx
+import { useState } from "react";
+
+export default function App() {
+  const counter = <Counter />;
+  return (
+    <div>
+      {counter}
+      {counter}
+    </div>
+  );
+}
+
+function Counter() {
+  const [score, setScore] = useState(0);
+  const [hover, setHover] = useState(false);
+
+  let className = "counter";
+  if (hover) {
+    className += " hover";
+  }
+
+  return (
+    <div
+      className={className}
+      onPointerEnter={() => setHover(true)}
+      onPointerLeave={() => setHover(false)}
+    >
+      <h1>{score}</h1>
+      <button onClick={() => setScore(score + 1)}>Add one</button>
+    </div>
+  );
+}
+```
+
+## 리액트가 컴포넌트를 제거하면 그 state가 사라진다.
+
+```js
+const [showB, setShowB] = useState(true);
+```
+
+![](https://velog.velcdn.com/images/ghwns1007/post/e036af49-5e94-45a9-a6af-53f4f1d990cb/image.png)
+![](https://velog.velcdn.com/images/ghwns1007/post/8295486b-5522-4d06-8d14-771f971cdbc8/image.png)
+
+## 리액트 입장에서 보면 같은 컴포넌트
+
+- 동일한 "주소"를 가진다.
+
+```jsx
+import { useState } from "react";
+
+export default function App() {
+  const [isFancy, setIsFancy] = useState(false);
+  return (
+    <div>
+      {isFancy ? <Counter isFancy={true} /> : <Counter isFancy={false} />}
+      <label>
+        <input
+          type="checkbox"
+          checked={isFancy}
+          onChange={(e) => {
+            setIsFancy(e.target.checked);
+          }}
+        />
+        Use fancy styling
+      </label>
+    </div>
+  );
+}
+
+function Counter({ isFancy }) {
+  const [score, setScore] = useState(0);
+  const [hover, setHover] = useState(false);
+
+  let className = "counter";
+  if (hover) {
+    className += " hover";
+  }
+  if (isFancy) {
+    className += " fancy";
+  }
+
+  return (
+    <div
+      className={className}
+      onPointerEnter={() => setHover(true)}
+      onPointerLeave={() => setHover(false)}
+    >
+      <h1>{score}</h1>
+      <button onClick={() => setScore(score + 1)}>Add one</button>
+    </div>
+  );
+}
+```
+
+![](https://velog.velcdn.com/images/ghwns1007/post/310c5c90-5807-4d3d-ad99-00cc72514700/image.png)
+
+![](https://velog.velcdn.com/images/ghwns1007/post/5ec849fe-419f-499a-883c-1bc32ab7033c/image.png)
+
+## 동일한 주소(위치)의 다른 컴포넌트는 state를 초기화한다.
+
+```jsx
+<div>{isPaused ? <p>See you later!</p> : <Counter />}</div>
+```
+
+![](https://velog.velcdn.com/images/ghwns1007/post/058bd203-9e72-484d-8628-7e9ec5ffb3ee/image.png)
+![](https://velog.velcdn.com/images/ghwns1007/post/974f9c4f-6275-4071-ba92-cd42b2158009/image.png)
+
+![](https://velog.velcdn.com/images/ghwns1007/post/c4313517-984a-429f-94d6-b044868f0692/image.png)
+
+## 또한 같은 위치의 다른 컴포넌트를 렌더링하면 전체 하위 트리의 state가 재설정된다.
+
+```
+  return
+    <div>
+      {isFancy ? (
+        <div>
+          <Counter isFancy={true} />
+        </div>
+      ) : (
+        <section>
+          <Counter isFancy={false} />
+        </section>
+      )}
+```
+
+## 그렇기 때문에 컴포넌트 함수 정의를 중첩해서는 안된다.
+
+```
+import { useState } from 'react';
+
+export default function MyComponent() {
+  const [counter, setCounter] = useState(0);
+
+  function MyTextField() {
+    const [text, setText] = useState('');
+
+    return (
+      <input
+        value={text}
+        onChange={e => setText(e.target.value)}
+      />
+    );
+  }
+
+  return (
+    <>
+      <MyTextField />
+      <button onClick={() => {
+        setCounter(counter + 1)
+      }}>Clicked {counter} times</button>
+    </>
+  );
+}
+
+```
+
+![](https://velog.velcdn.com/images/ghwns1007/post/cc9969b8-9b59-4c78-af63-33fe9a4c984f/image.png)
+
+## 기본적으로는 동일한 위치에 있는 컴포넌트의 state는 유지된다. 하지만 때로는 컴포넌트의 state를 리셋하고 싶을 때는??
+
+### 유지되는 state
+
+- 다른 위치에 렌더링 하면 된다.
+
+```jsx
+ const [isPlayerA, setIsPlayerA] = useState(true);
+  return
+    <div>
+      {isPlayerA ? (
+        <Counter person="Taylor" />
+      ) : (
+        <Counter person="Sarah" />
+      )}
+```
+
+### 재설정되는 state
+
+```jsx
+return
+    <div>
+      {isPlayerA &&
+        <Counter person="Taylor" />
+      }
+      {!isPlayerA &&
+        <Counter person="Sarah" />
+      }
+```
+
+- 더 일반적인 방법, key 사용
+
+```jsx
+{
+  isPlayerA ? (
+    <Counter key="Taylor" person="Taylor" />
+  ) : (
+    <Counter key="Sarah" person="Sarah" />
+  );
+}
+```
+
+## text state 를 초기화해야 하는 채팅 앱
+
+- key를 추가
+
+![](https://velog.velcdn.com/images/ghwns1007/post/6afc4275-9d9e-452b-8e82-61af001a2714/image.png)
+
+### 만약에 이전 수신자를 다시 선택할 때 입력 state를 불러오고 싶으면?
+
+- css
+- state 끌어올리기
+- localStorage

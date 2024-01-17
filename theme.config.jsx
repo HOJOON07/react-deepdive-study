@@ -5,6 +5,7 @@ export default {
     link: "https://github.com/shuding/nextra",
   },
   sidebar: {
+    // 시이드바 설정 config
     titleComponent({ title }) {
       if (title.includes("week")) {
         return (

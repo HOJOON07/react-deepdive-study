@@ -5,7 +5,11 @@
 ## 자바스크립트의 동등 비교
 
 -   falsy가 가능한 값의 실제 타입
-    <img width="601" alt="스크린샷 2024-01-20 오후 11 53 28" src="https://github.com/HOJOON07/react-deepdive-study/assets/108623656/aa62e808-f49a-4374-86ff-7d512ff93e2e">
+    <img
+        width='601'
+        alt='스크린샷 2024-01-20 오후 11 53 28'
+        src='https://github.com/HOJOON07/react-deepdive-study/assets/108623656/aa62e808-f49a-4374-86ff-7d512ff93e2e'
+    />
 -   리액트에서 사용하는 동등 비교는 ==나 ===가 아닌 Object.is다.
     -   `shallowEqual`이라는 함수를 만들어 사용하고, 이 함수는 의존성 비교 등 리액트의 동등 비교가 필요한 다양한 곳에서 사용된다.
     -   props가 깊어지는 경우, 즉 한 객체 안에 또다른 객체가 있을 경우 React.memo는 컴포넌트에 실제로 변경된 값이 없음에도 불구하고 메모이제이션된 컴포넌트를 반환하지 못한다.

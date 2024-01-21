@@ -1,1 +1,956 @@
-## 정리하기 파일
+# CH1. 리액트 개발을 위해 꼭 알아야할 자바스크립트
+
+## 1.1 자바스크립트의 동등 비교
+
+### 1.1.1 JS의 데이터 타입
+
+- 원시 타입
+
+  - boolean
+  - null
+    - 명시적으로 비어 있는 값
+    - type of 의 결과는 object 가 나온다
+  - undefined
+    - 선언 되었으나 할당되지 않은 값
+  - number
+    - 최대 2^53 - 1 까지 표현 가능
+  - bigint
+    - 2^53 - 1 이상의 수 표현 가능
+  - string
+  - symbol
+    - 중복되지 않는 고유한 값, 함수로만 생성 가능
+
+\*\* 세미 콜론 안쓰는거 저만 불편한가요? ㅋㅋㅋㅋㅋㅋ
+
+```js
+const key1 = Symbol("key");
+const key2 = Symbol("key");
+
+key1 === key2; //false
+
+// 동일한 값을 위해서넌 Symbol.for 사용
+```
+
+\*\* [p.26] Symbor 은 언제 쓰일까? 그리고 Symbor.for 로 동일한 값을 사용하면 그냥 일반 값을 쓰는 것과 무슨 차이일까?
+
+- 객체 타입
+
+  - object
+  - 참조를 전달하기 때문에 참조 타입(reference type)으로 불리운다
+
+### 1.1.2 값을 저장하는 방식의 차이
+
+- 원시 타입과 객체 타입의 차이
+
+  - 원시 타입은 메모리에 값 자체를 저장
+  - 객체 타입은 프로퍼티를 수정할 수 있으므로 원시 타입과 다르게 변경 가능한 형태로 저장, 값을 복사 할 때도 참조 값이 복사
+  - 단, 객체 내부의 프로퍼티의 값은 원시 형태로 저장
+
+### 1.1.3 자바스크립트의 또다른 비교 공식 Object.is
+
+- ES6(2015)에 도입 된 비교 문법, === 의 한계를 극복하기 위해 도입
+- === 와 동일하게 자동 형변환을 하지 않고 비교
+- === 가 하지 못하는 비교 가능
+- 객체간의 비교는 === 와 동일하게 비교
+
+```js
+-0 === +0; // true
+Object.is(-0, +0); //false
+// (x !== 0 || 1 / x === 1 / y) 를 사용해서 구분
+
+Number.NaN === NaN; // false
+Object.is(Number.NaN, NaN); // true
+// (x !== x && y !== y) 를 이용해 구분
+
+NaN === 0 / 0; // false
+Object.is(NaN, 0 / 0); // true
+// (x !== x && y !== y) 를 이용해 구분
+```
+
+\*\* [p.29] 이게 리얼루다가 제정신인 언어냐......
+
+### 1.1.4 리액트에서의 동등 비교
+
+- 리액트에서 사용하는 동등 비교는 Object.is 를 사용
+- ES6 하위 호환을 위해 별도로 구현한 polyfill(이전 브라우저에서 최신 기능 사용을 위한 코드) 사용
+
+- 리액트에서 아용하는 비교 코드
+
+- TS 버전
+
+```ts
+// polyfill
+function is(x: any, y: any) {
+  return (x === y && (x !== 0 || 1 / x === 1 / y)) || (x !== x && y !== y);
+}
+
+// 일반
+const objectIs: (x: any, y: any) => boolean =
+  typeof Object.is === "function" ? Object.is : is;
+```
+
+- JS 버전
+
+```js
+// polyfill
+function is(x, y) {
+  return (x === y && (x !== 0 || 1 / x === 1 / y)) || (x !== x && y !== y);
+}
+
+// 일반
+const objectIs = typeof Object.is === "function" ? Object.is : is;
+
+const obj1 = {};
+const obj2 = {};
+
+const objCopy = obj1;
+
+console.log(is(obj1, obj2)); // false
+console.log(is(obj1, objCopy)); // true
+
+console.log(objectIs(obj1, obj2)); // false
+console.log(objectIs(obj1, objCopy)); // true
+```
+
+\*\* [p. 29] -0 과 +0의 비교와 NaN이 각기 다르다는 점을 명확히 이해하게 되어서, 추후에 이게 왜이러지? 하는 상황은 거의 없긴 하겠지만 피할 수 있을듯
+
+<br />
+\*\* 그런데 이러니 JS가 노근본이라 욕을 먹지......
+
+```js
+// 전체 수식
+if (x === y && (x !== 0 || 1 / x === 1 / y)) || (x !== x && y !== y);
+
+// 첫번째 수식
+if (x === y)
+
+// 두번째 수식
+if (x !== 0 || 1 / x === 1 / y)
+
+// 세번째 수식
+if (x !== x && y !== y)
+```
+
+- 먼저 첫번째 비교식으로 기본적인 JS의 비교 성립
+
+---
+
+- 두번째 비교식(x !== 0 || 1 / x === 1 / y)을 통해 -0 과 +0 을 비교 가능
+- -0, +0 은 0 과 같다고 판단 되므로 x !== 0 에서 false 해당 비교식은 OR(||) 로 연결되어 있으니 다음 비교식 진행
+- 1 / x 와 1 / y 는 각각 부호가 붙은 인피니티가 나오기 때문에 서로 다르다! 따라서 해당 비교식에서 false
+- 그럼 두번째 비교식이 둘 다 false 처리가 되므로 해당 비교식은 false -> 전체 비교문은 AND(&&) 로 처리 되어 있으므로 false 결과 반환
+
+---
+
+- 세번째 비교식(x !== x && y !== y)을 통해 NaN 이 동등하다는 비교가 가능
+- NaN은 특이한 성질을 같는데, NaN은 JS의 전역 Number 객체의 프로퍼티다. 그리고 서로 동일 비교를 하면 false 가 뜬다
+- 따라서 NaN 끼리는 동등 비교를 통해 true 를 도출 할 수 없다
+- 이를 해결하기 위해 NaN이 세번째 비교식에 들어가면 둘다 true 가 뜨므로 다양한 NaN 이 동등하다고 비교가 가능하다
+- 추가 isNaN() 과 Number.isNaN() 의 차이
+  - isNaN은 인자를 숫자로 일단 한번 변환을 시킨 후, 해당 값이 NaN이면 true -> 문자열이나 숫자 이외의 값을 true 처리
+  - Number.isNaN은 변환 과정 없이 인자가 정확히 NaN 인 경우만 true 처리
+
+### 1.1.4 리액트에서의 동등 비교
+
+- 리액트는 일단 Object.is 로 동등 비교를 한다
+- 동등 비교가 안되는 객체의 경우는 depth 1 까지만 동등 비교(얕은 비교)를 한다
+- 이로 인해서 객체가 depth 2 이상을 가지게 되면, 값이 변화하지 않아도 무조건 렌더링이 되는 문제 발생
+  - useState 에서 객체를 잘 못 전달하면 무한 렌더링이 발생하는 이슈도 이러한 비교 특성으로 인한 문제
+- 재귀를 활용해서 객체를 깊은 비교를 했다면?
+  - 성능 이슈가 발생할 가능성이 높아서 제외
+  - 잘못된 객체 하나로 인하여 페이지 자체가 멈춰버리는 현상 발생 -> 프론트 입장에서는 최악의 결과
+
+```js
+import { memo, useEffect, useState } from "react";
+
+type Props = {
+  counter: number,
+};
+
+const Component = memo((props: Props) => {
+  useEffect(() => {
+    console.log("Component 랜더!");
+  });
+
+  return <h1>{props.counter}</h1>;
+});
+
+// Depth 가 2 이상이므로 memo 가 역할을 하지 못하고 무조건 렌더링이 된다.
+type DeeperProps = {
+  counter: {
+    counter: number,
+  },
+};
+
+const DeeperComponent = memo((props: DeeperProps) => {
+  useEffect(() => {
+    console.log("DeeperComponent 랜더!");
+  });
+
+  return <h1>{props.counter?.counter}</h1>;
+});
+
+export default function Chapter01() {
+  const [, setCounter] = useState(0);
+
+  const handleClick = () => {
+    setCounter((prev) => prev + 1);
+  };
+
+  return (
+    <div>
+      <Component counter={100} />
+      <DeeperComponent counter={{ counter: 100 }} />
+      <button onClick={handleClick}>리렌더</button>
+    </div>
+  );
+}
+```
+
+### 1.1.5 정리
+
+- JS의 이러한 언어적 특성(=한계) 이해해야만 정확한 리액트 구현이 가능
+- 추후 의존성 배열, useMemo, useCallback, React.memo 에도 동일하게 적용 되므로 이를 바탕으로 최적화 가능
+
+## 1.2 함수
+
+### 1.2.1 함수란 무엇인가?
+
+- 작업을 수행하거나 값을 계산하는 등의 과정을 표현하고, 이를 하나의 블록으로 감사서 실행 단위로 만들어 놓은 것
+
+### 1.2.2 함수를 정의하는 4가지 방법
+
+#### 함수 선언문
+
+- 가장 일반적인 방식
+- 선언문은 표현식이 아니므로 변수에 할당이 불가능해 보이지만, JS 엔진이 자동으로 표현식으로 해석하여 할당 가능
+- 호이스팅 지원
+
+```js
+const sum = function sum(a, b) {
+  return a + b;
+};
+```
+
+### 함수 표현식
+
+- JS에서 함수는 일급 객체(= 다른 객체들에 일반적으로 적용 가능한 연산을 모두 지원하는 객체)이다
+- 따라서 함수는 다른 함수의 매개변수, 반환 값으로 사용이 가능
+- 혼란을 방지하기 위해 함수의 이름은 생략하여 사용
+- 호이스팅 미지원
+
+```js
+const sum = function (a, b) {
+  return a + b;
+};
+```
+
+\*\* [p. 39] 둘의 사용은 취향의 차이, 회사의 협업자의 컨벤션을 따르는게 좋다고 생각
+
+#### Function 생성자
+
+- 실제로는 거의 사용되지 않는 방식
+- 실제로 매겨변수를 전부 문자열로 선언해야함
+- 클로저가 생성되지 않음
+
+```js
+const sum = new Function("a", "b", "return a+b");
+```
+
+### 화살표 함수
+
+- ES6 에서 새롭게 추가
+- 타이핑하는 글자수가 줄어드는 효과
+- 생성자(this) 사용 불가능 / argumenrs 가 제공되지 않음
+
+```js
+const sum = (a, b) => a + b;
+```
+
+- 클래스 컴포넌트에서 this 를 사용할 때, 함수 선언문으로 컴포넌트를 만들어서 this.setState 를 사용하려고 하면 this 가 컴포넌트 내부의 this 를 가르키기 때문에 this. setState 사용이 불가능
+- 화살표 함수를 사용하면, 만들어 지는 시점에서 자동으로 상위 스코프의 this 를 받아오므로, 클래스 컴포넌트의 this 를 받아서 this.setState 사용 가능
+
+```jsx
+import React, { Component } from "react";
+
+export default class Chapter01_1 extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      counter: 1,
+    };
+  }
+
+  functionCountUp() {
+    // functionCountUp 함수의 this 를 가르킴
+    console.log(this);
+    this.setState((prev) => ({ counter: prev.counter + 1 }));
+  }
+
+  arrowFunctionCountUp = () => {
+    // 삼위 클래스 컴포넌트의 this 를 가르킴
+    console.log(this);
+    this.setState((prev) => ({ counter: prev.counter + 1 }));
+  };
+
+  render() {
+    return (
+      <div>
+        <button onClick={this.functionCountUp}>일반 함수</button>
+        <button onClick={this.arrowFunctionCountUp}>화살표 함수</button>
+      </div>
+    );
+  }
+}
+```
+
+### 1.2.3 다양한 함수 살펴보기
+
+#### 즉시 실행 함수
+
+- IIFE(Immediately Invoked Function Expression)
+- 정의되는 즉시 실행되는 함수
+- 다시 호출이 불가능하여, 보통 이름을 붙이지 않는다
+
+```js
+(function (a, b) {
+  return a + b;
+})(10, 24);
+
+((a, b) => a + b)(10, 24);
+```
+
+#### 고차 함수
+
+- 함수를 인수로 받거나, 새로운 함수를 반환하는 함수
+- 이러한 특징을 활용하여 다른 컴포넌트를 인수로 받아 새로운 함수 컴포넌트를 반환하는 고차 함수 작성 가능
+- 컴포넌트 내부에서 공통으로 관리되는 로직을 분리하여, 효율적 리팩토링이 가능
+
+### 1.2.4 함수를 만들 때 주의해야 할 사항
+
+- 부수 효과를 최대한 억제할 것
+  - 액션을 제거하고 계산만 남기는 컴포넌트를 작성할 것(?)
+- 가능한 함수를 작게 만들 것
+- 누구나 이해할 수 있는 이름을 붙여라
+  - Teeser 를 사용하면 한글로 네이밍 가능
+
+## 1.3 클래스
+
+### 1.3.1 클래스란 무엇인가?
+
+- JS의 객체를 만들기 위한 일종의 템플릿 개념
+- constructor (생성자)
+  - 클래스 생성시 객체의 값을 정하는 특수 메서드, 하나만 사용가능
+- property (프로퍼티)
+  - 생성자에서 정의할 수 있는 속성 값
+
+```js
+class Car {
+  constructor(name) {
+    this.name = name;
+  }
+}
+
+const hyundaiCar = Car("hyundai");
+```
+
+- getter / setter
+  - 프로퍼티의 값을 지정하거나 받는 메서드, get / set 예약어 사용
+
+```js
+class Car {
+  constructor(name) {
+    this.name = name;
+  }
+
+  get getName() {
+    return this.name;
+  }
+
+  set setName(name) {
+    this.name = name;
+  }
+}
+```
+
+- 인스턴스 메서드
+  - 클래스 내부에 직접 정의한 메서드
+
+```js
+class Car {
+  constructor(name) {
+    this.name = name;
+  }
+
+  hello() {
+    console.log(`안녕하세요. ${this.name} 입니다!`);
+  }
+}
+```
+
+- 정적 메서드
+  - 인스턴스 없이 이름으로 호출 가능한 메서드
+  - 전역에서 사용하는 유틸 함수를 위해 주로 사용
+
+```js
+class Car {
+  constructor(name) {
+    this.name = name;
+  }
+
+  static hello() {
+    console.log("안녕하세요!");
+  }
+
+  sayName() {
+    console.log(this.name);
+  }
+}
+
+const hyundaiCar = new Car("hyundai");
+
+Car.hello();
+hyundaiCar.sayName();
+hyundaiCar.hello(); // 에러 발생
+```
+
+- 상속
+  - 클래스를 기반하여 확장하는 개념
+
+```js
+class Car {
+  constructor(name) {
+    this.name = name;
+  }
+}
+
+class Truck extends Car {
+  constructor(name) {
+    super(name);
+  }
+
+  load() {
+    console.log("짐 싣기");
+  }
+}
+
+const truck = new Truck();
+truck.load();
+```
+
+### 1.3.2 클래스와 함수의 관계
+
+- ES6에서 나온 개념
+- prototype 을 사용하여 구현하던 것을 객체지향 언어를 사용하는 프로그래머들이 좀 더 쉽게 JS 를 사용할 수 있도록 해주는 Syntactic Sugar 로서 적용
+
+## 1.4 클로저
+
+### 1.4.1 클로저의 정의
+
+- MDN 정의 : 클로저는 함수와 함수가 선언된 어휘적 환경(Lexical Scope)의 조합
+- 내가 생각한 정의 : 클로저는 함수가 정의된 시점에 결정되는 변수의 유효 Scope를 함수가 기억하고 실행 시 적용하는 것
+
+\*\* [p.59] 진짜로 MDN 정의 보고 바로 이해하신분?
+
+### 1.4.2. 변수의 유효 범위, 스코프
+
+#### 전역 스코프
+
+- 전역 레벨에서 사용되는 스코프
+- 브라우저 전역 객체인 window / Nodejs 전역 객체인 global 등
+- var 변수는 전역 스코프로 사용 된다
+
+#### 함수 스코프
+
+- JS 는 기본적으로 함수 레벨의 스코프를 따른다
+- {} 블록 범위 스코프가 아닌, 함수 정의 레벨에서의 스코프를 따름
+- 해당 변수가 호출 된 시점에서 가장 가까우 함수 레벨의 스코프를 참조
+
+\*\* [p.61] 이건 var 기준! let, const 는 블록 스코프를 따른다! let, const 없을 때 디버깅은 리얼 Hell....
+
+```js
+var x = 10;
+
+function foo() {
+  var x = 100;
+  console.log(x); // 100
+
+  function bar() {
+    var x = 1000;
+    console.log(x); // 1000
+  }
+}
+
+console.log(x); // 10
+```
+
+### 1.4.3 클로저의 활용
+
+- 클로저를 활용하면 전연 스코프의 사용을 막고, 개발자가 원하는 정보만 노출이 가능
+
+\*\* [p.64] 그런데 요즘은 let, const 를 쓰기 때문에 전역으로 let 을 선언해서 사용하는 것이 아닌 이상 크게 걱정할 내용은 아닌듯 합니다.
+
+#### 리액트에서의 클로저
+
+- useState 가 이미 호출이 끝났지만, 클로저의 특성으로 인하여 setState 함수는 useState 스코프의 state 값을 기억하고 있으며, 해당 값을 컨트롤 가능
+
+```js
+function Component() {
+  const [state, setState] = useState(0);
+
+  // 클로저의 특성으로 인하여 setState 는 명시적 표현 없이 state 의 값을 기억
+  const handleClick = () => {
+    setState((prev) => prev + 1);
+  };
+}
+```
+
+### 1.4.4 주의할 점
+
+- 클로저의 특성으로 인하여 의도하지 않은 동작 가능
+- for 문은 setTimeout 을 기다리지 않고 바로 실행되어 종료 -> 이 때 i 는 전역 스코프를 가지므로 5로 변경된 상태
+- setTimeout 는 실행된 상태로 콜스택에 쌓이고, 2번째 인수로 받은 시간이 되면 콜스택의 콜백 함수를 실행
+- 이때 결국 참조되는 것은 전역 i 이므로 5만 출력
+- 블록 스코프를 가지는 let 또는 IFEE 를 사용하여 함수 스코프를 이용 해결 가능!
+
+```js
+for (var i = 0; i < 5; i++) {
+  setTimeout(function () {
+    console.log(i);
+  }, i);
+}
+
+// 블록 스코프 이용
+for (let i = 0; i < 5; i++) {
+  setTimeout(function () {
+    console.log(i);
+  }, i);
+}
+
+// IFEE 로 함수 스코프를 한번 더 전달
+for (var i = 0; i < 5; i++) {
+  setTimeout(
+    (function (sec) {
+      return function () {
+        console.log(sec);
+      };
+    })(i),
+    i * 1000
+  );
+}
+```
+
+- 클로저는 해당 Lexical Scope 를 기억해야 하므로 메모리 사용량이 커지는 등의 문제가 생기므로 성능에서 고려할 점이 있다
+- 클로저 사용이 꼭 필요한 작업만 남겨서 잘 사용해야 한다 -> 클로저는 공짜가 아니다!
+
+## 1.5 이벤트 루프와 비동기 통신의 이해
+
+### 1.5.1 싱글 스레드 자바스크립트
+
+- JS 는 탄생 당시 간단한 작업을 하기 위해 만들어졌으므로, 동시성 문제 혹은 메모리 공유 문제를 피하기위해 싱글 스레드로 만들어짐
+- 추후 JS 에 요구되는 기능이 많아짐으로써 V8, Spider Monkey 등의 런타임에 비동기적 처리 방식이 추가
+
+### 1.5.2 이벤트 루프란?
+
+#### 호출 스택과 이벤트 루프
+
+- 이벤트 루프는 함수의 호출 스택이 비어있는지를 확인하는 역할을 한다
+- JS 는 싱글 스레드로 동작하지만, 비동기 함수 혹은 Wep API 호출 등은 엔진에 의해 다른 스레드가 수행
+- 다른 스레드가 수행을 마친 호출의 콜백이 콜스택이 완전히 비었을 때 태스크 큐로 들어가는 구조를 가진다
+
+\*\* [p. 75] 참고하기 좋은 블로그
+
+https://velog.io/@dahyeon405/%EC%9E%90%EB%B0%94%EC%8A%A4%ED%81%AC%EB%A6%BD%ED%8A%B8-%EB%8F%99%EC%9E%91-%EC%9B%90%EB%A6%AC-%EC%9D%B4%EB%B2%A4%ED%8A%B8-%EB%A3%A8%ED%94%84%EB%A5%BC-%ED%86%B5%ED%95%9C-%EB%B9%84%EB%8F%99%EA%B8%B0-%EC%B2%98%EB%A6%AC
+
+### 1.5.3 태스크 큐와 마이크로 태스크 큐
+
+- 이벤트 루프는 태스크 큐와 마이크로 태스크 큐를 가진다
+- 매크로 태스크 큐는 태스크 큐 또는, 콜백 큐라고 불리운다
+- ES6 에 들어 Promise 문법이 추가되어 마이크로 태크스 큐가 추가 되었고 마이크로 태스크 큐는 잡 큐 라고도 불리운다
+- 매크로 태스크 큐(= Task Queue, Callback Queue)는 setTimeout, setInterval, addEventListener, Web API 호출 같은 일을 처리한다
+- 마이크로 태스크 큐(= Job Task Queue)는 Promise 의 callback, async 함수의 await 부분 등등 태스크를 처리한다
+- 마이크로 태스크 큐(= Job Task Queue)는 태스크 큐(= Macro Task Queue) 보다 우선권을 가진다
+- 따라서 Promise, async 함수 등은 setTimeout, setInterval 보다 먼저 수행 된다
+
+\*\* [p. 76] 매크로와 마이크로 큐의 일들이 콜 스택에 들어간다는 것 잊지 말기! 콜 스택은 따로 존재한다!
+
+<br />
+
+\*\* [p. 76] 서버 통신 Web API 관련은 처리는 전부 매크로 태스크 큐에서 실행한다!
+
+- XMLHttpRequest, fetch 함수등은 Web API 에 의해 매크로 태스크 큐(= Callback Queue)에 등록이 된다
+- 여기서 XMLHttpRequest, fetch 에 의해 서버 통신이 발생하고 통신의 응답으로 이행되는 콜백 / Promise 또는 await 는 마이크로 태스크 큐에서 처리
+- 즉, 서버 통신 등록 자체는 이벤트 루프에 의해 순서대로 매크로 태스크에 등록이 되나 해당 통신이 이행되었을 때는 응답을 빠르게 처리해줘야 하므로 마이크로 태스크 큐에 등록하여 다음 매크로 태스크 작업을 수행하기 전에 처리를 완료한다.
+- 이런 이유로 인하여 마이크로 태스크가 매크로 태스크에 우선하는 특성을 가진다
+
+\*\* [p. 76] JS가 지속적으로 새로운 개념과 기능을 추가하다보니 헷갈리는 부분이 정말 많고, 기존 이름을 새롭게 변경하거나 추가하는 경우까지 겹쳐서 정말 혼동이 쉽게 오는 것 같습니다!
+
+```js
+function foo() {
+  console.log("foo");
+}
+
+function bar() {
+  console.log("bar");
+}
+
+function baz() {
+  console.log("baz");
+}
+
+setTimeout(foo, 0);
+
+Promise.resolve().then(bar).then(baz);
+
+// bar -> baz -> foo 순으로 실행
+```
+
+#### 렌더링은 언제 일어나는가?
+
+- 렌더링은 마이크로 태스크 큐 작업이 끝날 때마다 실행된다!
+- 즉, 마이크로 태스크와 매크로 태스크 큐 사이에서 발생
+
+\*\* [p. 77] 마이크로 태스크 큐에 들어간 작업 하나가 끝날 때마다 랜더링이 되는지, 아니면 모든 마이크로 태스크 큐가 끝난 후에 랜더링이 되는지 확인
+
+- 예제에 아래의 코드를 추가하여 확인
+
+```js
+const TIMES = 100000;
+
+test.addEventListener("click", () => {
+  for (let i = 0; i <= TIMES; i++) {
+    queueMicrotask(() => {
+      console.log("fisrt", i);
+    });
+  }
+
+  for (let i = 0; i <= TIMES; i++) {
+    queueMicrotask(() => {
+      console.log("second", i);
+    });
+  }
+
+  for (let i = 0; i <= TIMES; i++) {
+    setTimeout(() => {
+      test.innerHTML = i;
+      console.log("MACRO");
+    }, 100);
+  }
+});
+```
+
+- test 버튼 클릭이 발생하면 들어있는 3가지 for 문이 실행
+- for 문에 들어있는 queueMicrotask 와 setTimeout 은 JS의 비동기적 특성에 의해 거의 동시이긴 하지만 순서대로 호출
+- 제일 처음의 마이크로 태스크 큐에 들어간 for 문이 콘솔 창에 "first, i" 를 띄우면 실행 -> 이때까진 랜더링 X
+- "fisrt, 100000" 이 뜨면 버튼의 text 값이 변경(랜더링)이 되면서 "second, i" 콘솔이 뜨기 시작
+- 따라서, 랜더링은 마이크로 태스크 큐에 들어간 작업 하나가 끝나면 랜더링이 되는 것으로 볼 수 있다.
+- "second, 100000" 이 콘솔에 찍히면 마이크로 태스크 큐가 완전히 비게 되므로 그때 setTimeout 에 의해 들어간 "MACRO" 콘솔이 10001번 찍힘
+- 사실 이게 말이 되는 부분, 하나의 마이크로 큐 태스크로 작업 마친 것(아마도 서버 통신의 응답 같은 것)을 화면에 즉시 랜더링 해야할 일이 발생 할 텐데, 이때 모든 마이크로 큐 태스크를 전부 실행 후에 랜더링이 발생하면 프로그래머가 원하는 상황과는 다른 일이 생길듯
+
+## 1.6 리액트에서 자주 사용하는 자바스크립트 문법
+
+### 1.6.1 구조 분해 할당(Destructuring assignment)
+
+- 배열 또는 객체의 값을 분해하여 개별 변수에 할당하는 것
+- ES6 에서 첫 도입!
+
+#### 배열 구조 분해 할당
+
+- 구조 분해 할당에서 기본값이 사용되는 것은 undefined 값이 예상될 때 뿐이다.
+
+```js
+const [a = 1, b = 1, c = 1, d = 1, e = 1] = [undefined, null, 0, ""];
+
+console.log(a, b, c, d, e);
+// a, e 만 기본 값이 설정
+```
+
+- 전개 연산자 사용 가능
+
+### 객체 구조 분해 할당
+
+- 객체 내부의 이름으로 값을 꺼내오는 할당 법
+- 새로운 이름으로 할당 가능 / 기본값 설정 가능
+- 리액트 props 에서 주로 사용
+- 전개 연산자 사용 가능
+- 바벨에 의해 트랜스파일이 되면 번들링 크기가 상대적으로 크므로 사용시 성능 이슈를 고려할 필요가 있다
+
+```js
+const obj = {
+  a: 1,
+  b: 1,
+};
+
+const { a = 10, b = 10, c = 10 } = obj;
+
+console.log(a, b, c); // 1, 1, 10
+```
+
+### 1.6.2 전개 구문
+
+#### 배열의 전개 구문
+
+- 배열을 쉽게 합성 가능
+- 기존 배열에 영향을 미치지 않고 복사 가능 (값만 복사되고 참조는 다름)
+
+```js
+const arr1 = [1, 2];
+const arr2 = [...arr1, 3, 4, 5];
+
+console.log(arr2); // [1, 2, 3, 4, 5];
+```
+
+### 객체의 전개 구문
+
+- 객체를 합성하는데 편리하게 사용 가능
+- 순서가 중요하므로 순서를 잘 지켜서 사용해야 함
+
+```js
+const obj1 = {
+  a: 1,
+  b: 2,
+};
+
+const obj2 = {
+  ...obj1,
+  c: 3,
+};
+
+consloe.log(obj2); // { a: 1, b: 2, c: 3};
+```
+
+### 1.6.3 객체 초기자
+
+- 이미 변수로 선언된 값이 있으면 바로 객체 내부에 넣는 것이 가능
+- ECMAScript 2015 에 도입된 기능
+
+```js
+const a = 1;
+const b = 2;
+
+const obj = {
+  a,
+  b,
+};
+
+console.log(obj); // {a: 1, b: 2}
+```
+
+### 1.6.4 Array 프로토타입의 메서드(map, filter, reduce, forEach)
+
+#### map
+
+- 전달 받은 배열에 특정 콜백 함수의 작업을 마친 뒤, 같은 길이의 배열을 반환하는 메서드
+
+#### filter
+
+- 콜백 함수의 조건 결과에 따라 원소 반환을 결정하는 메서드
+
+#### reduce
+
+- 콜백 함수를 실행하고, 이를 초깃값에 누적해서 결과를 반환하는 메서드
+- 다양한 활용이 가능
+
+```js
+// filter 를 reduce 로 구현
+const arr = [1, 2, 3, 4, 5];
+
+const result = arr.reduce((acc, cur) => {
+  if (cur % 2 === 0) {
+    acc.push(cur);
+  }
+
+  return acc;
+}, []);
+
+console.log(result); // [2, 4]
+```
+
+#### forEach
+
+- forEach 는 반환 값이 없고 콜백 함수만 실행하므로 주의 필요
+- 또한 break, rerturn 등으로 순회를 멈출 수 없으므로 주의 필요
+
+### 1.6.5 삼한 조건 연산자
+
+- JS 에서 유일하게 3개의 피연산자를 취할 수 있는 문법
+- 중첩 되면 가독성이 떨어지므로 가급적 중첩을 피하는 것이 좋다
+
+## 1.7 선택이 아닌 필수, 타입스크립트
+
+- 필수다!
+
+### 1.7.1 타입스크립트란?
+
+- JS 에 타입을 가미한 것
+- JS 의 한계인 동적 타입 언어가 가지는 문제를 해결하기 위해 도입
+- 런타임이 아닌 빌드(트랜스파일, 컴파일) 타임에 타입 체크를 수행
+  - 빌드 타임에 에러가 발생할 가능성이 있는 코드를 체크 가능
+- 결국 TS 는 JS 의 슈퍼셋일 뿐(= 결국 JS 로 변환 되므로)이므로, JS 에서 불가능한 작업을 TS 에서 수행하는 것은 불가능
+
+### 1.7.2 리액트 코드를 효과적으로 작성하기 위한 타입스크립트 활용법
+
+#### any 대신 unknown 을 사용하자
+
+- any 를 사용하면 TS 를 사용하는 장점을 버리는 것과 마찬가지
+- any 대신 unknown 을 사용하기
+- nerver 를 사용하여 사용하지 않는 값 처리하기
+- unknown 을 사용하기 위해서는 해당 변수의 type narrowing 을 해줘야만 사용이 가능하기 때문에 any 로 부터 발생하는 문제점 해결이 가능!
+
+```ts
+function doSomthing(cb: unknown) {
+  if (typeof cb === "function") {
+    cb();
+    return;
+  }
+
+  throw new Error("cb 은 함수여야 합니다!");
+}
+
+doSomthing(1); // throw Err
+```
+
+#### 타입 가드를 적극 활용하자
+
+##### instanceof 와 typeof
+
+- instanceof 로 지정한 인터스턴스가 특정 클래스의 인스턴스인지를 확인하여 원하는대로 처리 가능
+- typeof 로 자료형을 확인하여 type narrowing
+- in 으로 객체에 특정 키가 존재하는지 확인하여, 타입을 체크
+
+#### 제네릭
+
+- 다양한 타입에 대응하기 위한 도구
+- 타입만 다르고 비슷한 작업을 하는 것을 제너릭을 사용하여 간결하게 작성 가능
+
+```ts
+// 제네릭 T 를 사용하여 인수에 따라 다른 결과 도출 가능
+function getFirstAndLast<T>(list: T[]): [T, T] {
+  return [list[0], list[list.length - 1]];
+}
+
+const [first, last] = getFirstAndLast([1, 2, 3, 4, 5]);
+
+const [firstStr, lastStr] = getFirstAndLast(["a", "b", "c", "d", "e"]);
+```
+
+```ts
+// multiple 제네릭 사용
+function multipleGeneric<First, Last>(a: First, b: Last): [Fisrt, Last] {
+  return [a, b];
+}
+
+const [a, b] = multipleGeneric<string, boolean>("true", true);
+```
+
+#### 인덱스 시그니쳐
+
+- 객체의 키에 원하는 타입을 부여하는 방법
+- 동적인 객체를 정의할 때 유용하지만, 존재하지 않는 키로 접근하면 undefined 를 반환하여 문제를 발생
+- 객체의 키를 동적으로 선언되는 경우를 지양하고, 객체의 타입도 필요에 따라 좁혀야 한다
+
+```ts
+type Hello = Record<"hello" | "hi", string>;
+
+const hello: Hello = {
+  hello: "hello",
+  hi: "hi",
+};
+
+type Hello = { [key in "hello" | "hi"]: string };
+
+const hello: Hello = {
+  hello: "hello",
+  hi: "hi",
+};
+```
+
+- Record 는 문자열 리터럴을 Key 로 사용 가능
+
+```ts
+type humanInfo = {
+  [name: "홍길동" | "둘리" | "마이콜"]: number;
+};
+
+// 위의 타입은 에러 발생
+
+type names = "홍길동" | "둘리" | "마이콜";
+
+type humanInfoRecord = Record<names, number>;
+
+let human: humanInfoRecord = {
+  홍길동: 20,
+  둘리: 30,
+  마이콜: 40,
+};
+
+// Key 값을 문자열 리터럴로 지정 가능
+```
+
+#### 덕 타이핑
+
+- 어떤 것이 오리처럼 걷고, 헤엄치고, 소리를 내면 그건 오리이다!
+- 자바스크립트의 특징으로 객체의 타입이 클래스 상속, 인터페이스 구현 등으로 결정되는 것이 아니다
+- 어떤 객체가 필요한 변수와 메서드만 가지고 있다면 해당 타입에 속하는 것 처럼 인정해 주는 것을 말한다
+- 따라서 타입 스크립트 역시, 타입 체크를 할 때 단순히 값이 가진 형태만 체크를 한다
+- Car 타입으로 선언이 안되어도, 변수와 메서드만 가지고 있으면 문제 없이 실행
+
+```ts
+type Car = { name: string };
+type Truck = Car & { power: number };
+
+function horn(car: Car) {
+  console.log(`${car.name}가 경적을 울립니다!`);
+}
+
+const truck: Truck = {
+  name: "포드",
+  power: 100,
+};
+
+horn(truck); // 정상 작동
+
+const obj = {
+  name: "오브젝트",
+};
+
+horn(obj); // 정상 작동
+
+const obj2 = {
+  test: "테스트",
+};
+
+horn(obj2); // name 프로퍼티 없어서, ts 에러 발생
+```
+
+### 1.7.3 타입스크립트 전환 가이드
+
+#### tsconfig.json 먼저 작성하기
+
+#### JSDoc 과 @ts-check 를 활용해 점진적으로 전환하기
+
+- JSDoc 주석을 사용하여 타입을 미리 명시적으로 확인하기
+- // @ts-check 구문으로 미리 타입 확인
+
+```js
+// @ts-check
+
+/**
+ * @param {number} a
+ * @param {number} b
+ * @return {number}
+ */
+function sum(a, b) {
+  return a + b;
+}
+```
+
+#### 타입 기반 라이브러리 사용을 위해 @types 모듈 설치
+
+- 타입스크립트로 작성되지 않은 코드에 대한 타입을 제공하는 라이브러리
+- js 파일을 ts 로 전환시, 특정 라이브러리가 import 되지 않는 경우 @types 라이브러리를 설치하여 해결
+
+#### 파일 단위로 조금씩 전환하기
+
+- 별도의 의존성이 없는 파일부터 ts 로 전환
+- 전환 과정에서 잠재적 버그를 발견 -> 더 좋은 코드로 수정 가능

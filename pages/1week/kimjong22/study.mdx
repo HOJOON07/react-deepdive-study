@@ -1,1 +1,336 @@
-## 정리하기 파일
+## 01장. 리액트 개발을 위해 꼭 알아야 할 자바스크립트
+
+### 1.1 자바스크립트의 동등 비교
+
+---
+
+##### 자바스크립트 원시 타입과 객체 타입의 가장 큰 차이점
+
+- 값을 저장 하는 방식 때문에 동등 비교를 할 때 차이 존재
+- 객체 타입은 참조를 전달한다고 해서 참조 타입
+- 값을 저장하는 것이 아닌 참조를 저장하기 때문에 동일하게 선언했던 객체라도 저장하는 순간 다른 참조를 바라봄
+- 객체 타입은 프로퍼티를 추가, 수정할 수 있으므로 원시값과는 다르게 변경 가능한 형태로 저장되고, 값을 복사할 때 값이 아닌 **참조**를 전달
+- 이를 해결하기 위한 비교 문법으로 Object.is를 ES6에서 새롭게 도입했으나 객체 간 비교에 있어서는 ===와 동일하게 동작
+
+```javascript
+var hello = {greet: ’hello,world’}
+
+var hi = {greet: ’hello,world’}
+
+// 동등 비교 시 false
+console.log(hello === hi) // false
+
+// 원시값인 내부 속성값을 비교하면 동일
+console.log(hello.greet === hi.greet) // true
+
+```
+
+##### 리액트에서의 동등 비교는 ==나 ===가 아닌 폴리필로 구현한 Object.is
+
+- objectI를 기반으로 동등비교를 하는 `shallowEqual`이라는 함수를 구현
+- `shallowEqual`은 의존성 비교 등 리액트의 동등 비교가 필요한 곳에서 Object.is로 비교 수행 => 객체 같 얕은 비교를 수행하는 방식으로 사용
+- `shallowEqual`은 객체의 첫 번째 깊이에 존재하는 값만 비교하기 때문에 props에 객체를 넘겨주면 리액트 렌더링이 예상하지 못한 방식으로 작동
+- props가 깊어지면 React.memo는 컴포넌트가 실제로 변경된 값이 없음에도 메모이제이션 된 컴포넌트를 반환하는 데 실패
+
+### 1.2 함수
+
+---
+
+```javascript
+// sum은 함수명, 함수의 입력값인 a,b는 매개변수
+function sum(a, b) {
+  return a + b; // 함수의 반환값
+}
+sum(10, 24); // 10, 24는 함수의 인수
+```
+
+- 리액트의 Component 함수는 Component라는 함수를 선언하고 props라는 매개변수를 받으며 JSX를 return한다.
+
+##### 함수 선언문, 함수 표현식
+
+```javascript
+function add(a, b) {
+  return a + b;
+}
+```
+
+- 함수 선언문은 표현식이 아닌 일반 문으로 분류
+- 함수 선언은 어떠한 값도 표현되지 않았으므로 표현식이 아닌 문으로 분류
+
+```javascript
+const sum = function (a, b) {
+  return a + b;
+};
+sum(10, 24); // 34
+```
+
+- 함수 표현식은 함수를 변수에 할당
+- 함수 선언문과 함수 표현식은 **호이스팅 여부**에서 가장 큰 차이점을 가진다.
+
+##### 화살표 함수
+
+```javascript
+const sum = (a, b) => {
+  return a + b;
+};
+sum(10, 24); // 34
+```
+
+- 화살표 함수는 consructor을 사용하는 것이 불가능, 즉 생성자 함수로 사용하는 것이 불가능
+- arguments가 비존재
+- this 바인딩 시 **상위 스코프의 this**를 그대로 따르는 형식
+
+##### 고차 함수
+
+```javascript
+// localStorage에 액세스토큰 유무를 검증하는 컴포넌트를 고차 컴포넌트로 분리
+
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
+export const withAuth = (Component) => (props) => {
+  const router = useRouter();
+  useEffect(() => {
+    if (!localStorage.getItem("accessToken")) {
+      alert("로그인 후 이용 가능합니다.");
+      router.push("/login");
+    }
+  }, []);
+
+  return <Component {...props} />;
+};
+
+function LoginSuccessPage() {
+  // ... 로그인이 필요한 api를 요청
+  return <div>로그인 성공 시 렌더링 되는 페이지</div>;
+}
+export default withAuth(LoginSuccessPage);
+```
+
+- 자바스크립트의 함수가 일급 객체라는 특징을 활용해 함수를 인수로 받거나 결과로 새로운 함수를 반환하는 것이 가능
+- 고차 함수형 컴포넌트는 컴포넌트 내부에서 공통으로 관리되는 로직을 분리해 관리가 가능해 효율적으로 리팩토링이 가능
+
+### 1.3 클래스
+
+---
+
+- 특정한 객체를 반복적으로 반들기 위해 사용
+
+```javascript
+class Person {
+
+constructor(name) {
+  this.name = name
+}
+
+// 메서드
+hello() {
+  console.log(`hello ${this.name} !`)
+}
+
+// 정적 메서드
+static myName() {
+  console.log(’저는 사람입니다.’)
+}
+
+// setter
+set age(value) {
+  this.age = value
+}
+
+// getter
+get age() {
+  return this.age
+}
+
+}
+
+const Jinsu = new Person('진수')
+
+// 메서드는 인스턴스에서 호출 가능
+Jinsu.hello();
+
+//정적 메서드는 인스턴스에서 호출 불가능
+Person.myName();
+
+Jinsu.age = 24;
+console.log(Jinsu.age, Jinsu.name) // 24 진수
+```
+
+##### 인스턴스 메서드
+
+- 인스턴스 메서드는 prototype에 선언되므로 프로토타입 메서드로도 명명
+- hello라는 인스턴스 메서드는 prototype에 선언됐기 때문에 새롭게 생성한 객체에서 접근하는 것이 가능
+- **프로토타입 체이닝**을 통해 특정 속성을 찾을 때 자기 자신부터 시작해서 상위 프로토타입에 있는 메서드를 찾아서 실행
+
+##### 정적 메서드
+
+- 정적 메서드 내부의 this는 클래스 자신을 가리키기 때문에 this t사용이 불가능
+- 객체를 생성하지 않아도 여러 곳에서 재사용 가능하다는 장점
+
+### 1.4 클로저
+
+---
+
+##### 클로저는 함수와 함수가 선언된 Lexical Scope의 조합
+
+- **변수의 유효 범위**는 변수가 코드 내부에서 어디에 선언 되었는 지에 따라 정의
+- Lexical Scope란 변수가 코드 내부에서 어디서 선언 됐는 지를 말하는 것
+- 클로저는 이러한 Lexical Scope을 조합해 코딩하는 기법
+- 클로저는 생성될때마다 Lexical Scope를 기억해야 하므로 추가로 비용이 발생
+
+##### 리액트에서의 클로저
+
+```javascript
+function Component() {
+const [state, setState] = useState()
+
+// useState의 호출은 이미 종료
+// setState는 최신값인 prev를 이용하는 것이 가능
+// 이는 클로저를 활용했기에 가능
+function handleClick() {
+ setState((prev) => prev + 1)
+}
+```
+
+- 리액트가 관리하는 내부 상태 값은 리액트가 별도로 관리하는 클로저 내부에서만 접근 가능
+- useState의 변수를 저장해 두고, useState의 변수 접근 및 수정 또한 클로저 내부에서 확인이 가능해 값이 변하면 렌더링 함수를 호출하는 작업 등을 수행
+
+### 1.5 이벤트 루프와 비동기 통신의 이해
+
+---
+
+- 자바스크립트는 싱글 스레드에서 작용
+- 자바스크립트 코드의 실행은 하나의 스레드에서 순차적으로 이루어지게 됨
+
+##### 이벤트 루프
+
+```javascript
+function bar() {
+  console.log(’ bar ’)
+}
+
+function baz() {
+  console.log(’baz’)
+}
+
+function foo() {
+  console.log(’foo’)
+  setTimeout(bar(), 0)
+  baz()
+}
+
+foo()
+```
+
+1. foo()가 호출 스택에 들어간다
+2. foo() 내부의 console.log가 호출 스택에 들어간다.
+3. 2의 실행이 완료된다.
+4. setTimeout(bar(), 0)이 호출 스택에 들어간다.
+5. 4번의 타이머 이벤트가 태스크 큐로 들어간다. 호출 스택에서 제거된다.
+6. baz()가 호출 스택에 들어간다.
+7. baz() 내부의 console.log가 호출 스택에 들어간다.
+8. 7의 실행이 완료되고 다음 코드로 넘어간다.
+9. baz()에 남은 것이 없으므로 호출 스택에서 제거된다.
+10. foo()가 호출 스택에서 제거된다.
+11. 호출 스택이 완전히 비워진 후 이벤트 루프가 태스크 큐를 확인한다.
+12. 태스크 큐에서 4번 내용을 확인하고 bar()가 호출 스택에 들어간다.
+13. bar() 내부의 console.log가 호출 스택에 들어간다.
+14. 13의 실행이 끝나고 다음 코드로 넘어간다.
+15. bar()에 남은 것이 없으므로 호출 스택에서 제거된다.
+
+- 이벤트 루프는 자바스크립트 런타임 외부에서 자바스크립트의 비동기 실행을 돕기 위해 만들어진 장치
+- 이벤트 루프는 태스크 큐를 한개 이상 소유
+- 태스크 큐는 queue의 형태가 아닌 set 형태로, 선택된 큐 중에서 **실행 가능한** 가장 오래된 태스크를 가져와야 하기 때문
+- 이벤트 루프는 호출 스택에 실행 중인 코드가 있는지, 태스크 큐에 대기 중인 함수가 있는지 반복해서 확인
+- 호출 스택이 비었다면 태스크 큐에 대기중인 작업이 있는 지 확인하고 이 작업을 실행 가능한 오래된 것부터 순차적으로 꺼내와서 실행
+
+##### 태스크 큐와 마이크로 태스크 큐
+
+- 마이크로 태스크 큐는 기존 태스크 큐보다 우선권을 갖는다.
+  - 대표적인 마이크로 태스크 큐는 Promise
+- 렌더링은 마이크로 테스크 큐를 실행하고, 이후에 렌더링이 일어난다.
+
+### 1.6 리액트에서 자주 자용하는 자바스크립트 문법
+
+---
+
+##### 구조 분해 할당
+
+- useState가 배열을 반환하는 이유는 배열 구조 분해 할당이 자유롭게 이름을 선언할 수 있기 때문
+
+```javascript
+const array = [1, 2];
+const [a = 10, b = 10, c = 10] = array;
+```
+
+- 배열 분해 할당에는 기본값을 선언하는 것이 가능
+
+```javascript
+const array = [1, 2, 3, 4, 5];
+// 특정값 이후의 값을 배열로 선언하고 싶다면 전개 연산자를 사용
+const [first, ...rest] = array;
+console.log(rest); // [2, 3, 4, 5]
+```
+
+##### forEach
+
+```javascript
+function run(){
+  const arr = [1, 2, 3]
+  arr.forEach((v) => {
+    console.log(v);
+    if(v === 1){
+      console.log('stop');
+      return;
+  })
+}
+
+run()
+
+// 1
+// stop
+// 2
+// 3
+// 4
+
+```
+
+- forEach는 반환값이 비존재
+- 콜백 함수 내부에서 return문으로 반환해도 모두 의미 없는 값으로 간주
+- forEach를 종료하기 위해서는 에러를 던지거나 프로세스를 종료해야 함
+  - break, return 으로 배열 순회를 멈추는 것이 불가능
+    - return이 함수의 return이 아닌 콜백 함수의 return으로 간주되기 때문
+
+### 1.7 타입스크립트
+
+---
+
+- 타입스크립트는 자바스크립트의 한계를 벗어나 타입 체크를 정적으로 런타임이 아닌 빌드 타임에 수행
+- 타입스크립트는 자바스크립트의 슈퍼셋으로 함수의 반환 타입, 배열, Enum등의 타입 관련 작업들을 처리
+
+##### unknown
+
+```javascript
+function doSomething(callback: unknown) {
+	if (typeof callback === ’function’ ) {
+      callback()
+	}
+throw new Error(‘ callback은 함수여야 합니다. ’)
+```
+
+- 타입을 단정할 수 없는 경우에는 any 대신 unknown을 사용하는 것을 추천
+- unknown은 모든 값을 할당할 수 있는 top type 이지만 값을 바로 사용하는 것은 불가능
+- unknown으로 선언된 변수는 type narrowing을 통해 타입을 좁히는 과정이 필요
+
+##### 제네릭
+
+```javascript
+function multipleGeneric<First, Last>(al: First, a2: Last): [First, Last] {
+  return [a1, a2]
+}
+
+const [a, b] = multipleGeneric<string, boolean>(’true’, true)
+```
+
+- 제네릭을 하나 이상 사용할 때는 일반적으로 T, U 등으로 표현하는 경우가 많은데, 제네릭이 의미하는 바를 명확하게 하기 위해서 적절하게 네이밍 하는 것을 추천

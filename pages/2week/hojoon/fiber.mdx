@@ -1,0 +1,81 @@
+dfs
+즉 부모를 workInProgress로 지정하고 completeWork()를 다시 호출한다.
+completeUnitOfWork()를 벗어나지 않은 채 completeWork()를 부모 FiberNode에 대해서 반복적으로 호출하여 DOM 트리를 완성시켜 나간다.
+
+## 리액트의 파이버 아키텍처
+
+- 요약한 내용입니다.
+- [참고한 블로그](https://d2.naver.com/helloworld/2690975)
+
+### 리액트는 16 버전부터 파이러라 불리는 새로운 코어 아키택처를 채택했다. (18.2버전을 기준으로 설명함)
+
+### 리액트의 element 렌더링
+
+- type, props, children 세 개의 인자를 가진다.
+- 리액트 DOM은 리액트 element와 일치하도록 DOM을 업데이트한다.
+
+### reconciliation
+
+1. 서로 다른 타입의 두 element는 서로 다른 트리를 만들어낸다.
+2. 개발자가 key prop을 통해, 여러 렌더링 사이에서 어떤 자식 엘리먼트가 변경되지 않아야 할지 표시해 줄 수 있다.
+   > 무슨 말이냐면 key를 사용해 컴포넌트를 구분할 수 있고, 리액트의 관점에서 보면 같은 위치에 있더라도 서로 다른 컴포넌트이다. key 자체를 위치의 일부로 사용하기 때문임.
+   > 또한 key는 전역적으로 고유하지 않고, 부모 내에서의 위치만 지정한다.
+
+### ui업데이트 주기
+
+> 모니터의 초당 화면 갱신은 60hz, 16ms가 걸린다. 작성한 코드가 16ms 이상의 시간을 소비하면서 연속적으로 실행되고 있다면 끊기는 현상이 발생할텐데,
+> 리액트의 파이버 구조에서는 ui갱신 작업을 작은 단위로 나누어 내부적으로 스케줄링해서 16ms를 초과하지 않도록 한다.
+
+### 동시성 스케줄링
+
+> 갈수록 커지고 복잡해지는 앱 컴포넌트를 빠르게 업데이트 하기 위해서는 DOM 업데이트, 렌더링 로직을 작업 단위로 구분하고 이를 비동기로 실행하여 제어한다.
+> 작업의 유형에 따라 우선순위를 부여하고 기존에 수행중인 작업보다 더 우선순위가 높은 작업이 인입될 경우 기존의 작업을 일시 중단하고 인입된 작업을 처리 후 다시 돌아오는 기능이 있다.
+
+## 리액트의 동작 단계
+
+- Render : react.createElement()
+- Reconcile : 트리 비교
+- Commit : 새로운 DOM Element를 브라우저 뷰에 커밋
+- Update : props, state 변경 시 해당 컴포넌트와 하위 컴포넌트에 대해 위 과정을 반복적으로
+
+> 봐야 할 것은 흔히 우리가 생각하는 DOM 렌더링 동작은 리액트에서 커밋이라고 불린다.
+
+### 간단한 컴포넌트
+
+```js
+import React from "react";
+
+export function SimpleComp(): JSX.Element {
+  const [name, setName] = React.useState < string > "Alice";
+  return (
+    <div>
+      <h1>Hello react!</h1>
+      <section>
+        <p>{`Name : ${name}`}</p>
+        <button
+          onClick={(e) => setName(name === "Samuel" ? "Alice" : "Samuel")}
+        >
+          Click me
+        </button>
+      </section>
+    </div>
+  );
+}
+```
+
+### reconcile 단계
+
+- DFS로 reconciliation이 동작한다.
+- SimpleComp 루트인 div의 FiberNode를 생성
+- beginwork를 실행 자식인 hi FiberNode를 생성
+- h1의 자식은 없으므로 next === null -> completeWork에 진입
+- completedWork.sibling(형제) 가 있다면 다시 workingProgress로 지정
+- 다시 beginwork를 수행한다. 만약 sibling(형제)가 없다면 returnFiber, 즉 부모를 workingProgress로 지정하고 completedWork()를 다시 호출한다.
+- completeWork는 completeUnitOfWork가 감싸고 있는데 이것을 벗어나지 않은 채 completeWork를 부모 firberNode에 반복적으로 호출하여 DOM트리를 완성시켜 나간다. -> DFS
+- 끝나면 Commit 단계이다.
+
+#### 이 뒤에는 뭐라는지 이해를 못하겠어서 정리가 불가능.
+
+- 여튼 대충 적어보자면 reconcile 단계가 끝나면 dom에 업데이트를 하게 된다는거 같다?
+- 변경된 값은 pendingProps에 할당되고 oldProps와 newProps를 비교하여 children 갱신 사항만 updateQueue에 저장한다.
+  ![](https://velog.velcdn.com/images/ghwns1007/post/e6657991-da9c-463b-b936-53c6aec4db67/image.png)

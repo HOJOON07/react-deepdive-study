@@ -1,1 +1,26 @@
-## 정리하기 파일
+## 2. 리액트 핵심요소 깊게 살펴보기
+
+### 2-1 . props 여부에 따라 children 요소 만 달라지는 경우
+
+굳이 번거롭게 전체 내용을 삼항 연산자로 처리할 필요가 없다. 
+이 경우 불필요한 코드 풍복이 일어난다. -> 실제로 삼항연산자 처돌이 입니다.. 
+
+```jsx
+import { createElement } from 'react’
+function TextOrHeading({
+isHeading ,
+children ,
+}: PropsWithChildren<{ isHeading: boolean }>) {
+
+return createElement(
+
+isHeading ? ’hl’ : ’span’,
+ { className : ’text' } , children ,
+)}
+
+```
+
+### 2-2 가상 DOM과 리액트 파이버
+- 가상 DOM은 웹페이지가 표시해야 할 DOM을 일단 메모리에 저장하고 리액트가 실제 변경에 대한 준비가 완료됐을 때 실제 브라우저의 DOM에 반영한다.
+- 리액트 파이버 : 가상 DOM과 렌더링 과정 최 적회를 기능하게 해주는 것
+

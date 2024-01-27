@@ -5,7 +5,7 @@
 굳이 번거롭게 전체 내용을 삼항 연산자로 처리할 필요가 없다. 
 이 경우 불필요한 코드 풍복이 일어난다. -> 실제로 삼항연산자 처돌이 입니다.. 
 
-```
+```jsx
 import { createElement } from 'react’
 function TextOrHeading({
 isHeading ,
@@ -29,7 +29,7 @@ isHeading ? ’hl’ : ’span’,
 ### 2.3 클래스형 컴포넌트와 함수형 컴포넌트
 
 #### 클래스형 컴포넌트
-- class SampleComponent extends React.Component{} 의 형식
+- 'class SampleComponent extends React.Component{}' 의 형식
 - 한계 
 - 데이터의 흐름을 추적하기 어럽다
 - 애플리케이선 내부 로직의 재사용이 어렵다
@@ -40,7 +40,7 @@ isHeading ? ’hl’ : ’span’,
 
 
 #### 함수형 컴포넌트
-- export function SampleComponent({ required, text }: SampleProps) {} 형식
+- 'export function SampleComponent({ required, text }: SampleProps) {}' 형식
 
 
 #### 함수형 컴포넌트 V$. 클래스형 컴포넌트

@@ -1,1 +1,101 @@
-## 발표자료
+# Web Application Rendering 전략
+
+## SPA(Single Page Application) (2005)
+
+-   SPA가 등장하기 전에는, a태그를 클릭하여 다른 페이지로 이동하면 해당 페이지의 HTML을 다시 불러와야 했음 (SSG)
+-   SPA는 AJAX의 등장과 함께 등장한 것으로, 사용자가 하나의 페이지 안에서 머무르면서, 변경이 필요한 부분만 부분적으로 업데이트
+-   Web Application이 더 많이 사용하게 된 계기 (개인적인 생각)
+
+## CSR과 SSR
+
+### CSR (Client Side Rendering)
+
+-   클라이언트인 브라우저가 렌더링을 처리하는 방식
+    -   HTML 문서에는 body 태그 안이 텅텅 비어있고, 서버에서 JS파일을 받아서 이를 채워주는 방식
+-   새로고침이 발생하지 않아 화면 전환이 매끄럽고 서버 트래픽을 감소시킨다는 장점
+-   첫화면에서 HTML, CSS, JS가 모두 다운로드 되므로 첫 페이지 로딩 시간이 길고, SEO에 SSR보다 불리하다는 단점
+
+### SSR (Server Side Rendering)
+
+-   SSR은 서버에서 화면을 그려서 브라우저에 전달하는 방식
+-   첫 페이지 로딩 속도가 CSR에 비해 빠르고, SEO 측면에서 CSR보다 더 유리하다는 장점
+-   그러나 페이지 이동 시 속도가 CSR보다 느리고 서버에 더 많은 요청을 보내야 한다는 점이 단점
+
+최근에는 Next.js와 같은 프레임워크를 사용하면 서버 컴포넌트와 클라이언트 컴포넌트를 함께 사용할 수 있어 SSR과 CSR의 장점을 모두 살릴 수 있다.
+
+### Pre-rendering (Next 13 이전)
+
+[Building Your Application: Rendering](https://nextjs.org/docs/pages/building-your-application/rendering)
+
+-   Next.js는 기본적으로 모든 페이지를 `사전 렌더링(Pre-rendering)`한다.
+-   따라서 미리 HTML 파일을 만들어두어 더 좋은 퍼포먼스를 제공하고, 검색엔진최적화(SEO)에 이점이 있다.
+-   next.js는 두 가지 사전 렌더링 방법을 제공한다.
+    -   Static Site Generation(SSG)
+    -   Server Side Rendering(SSR)
+-   이 두 가지는 언제 HTML 파일을 생성하는지에 차이점이 있다.
+
+#### Static Site Generation(SSG)
+
+-   정적 생성 방법으로, 프로젝트가 빌드하는 시점에 HTML 파일들이 생성된다.
+-   미리 빌드된 HTML을 사용자의 요청이 들어올 때마다 재사용한다.
+-   정적 생성된 페이지들은 CDN에 캐시가 되고, 퍼포먼스를 이유로 Next.js는 정적 생성을 권고한다.
+-   유저가 요청하기 전에 미리 페이지를 만들어놔도 된다면 SSG을 사용하면 된다.
+-   그러나 데이터가 계속 바뀌어야하는 페이지라면 SSR을 사용하면 된다.
+-   `getStaticProps` / `getStaticPaths`
+-   예시) 약관 보기 페이지
+
+#### Server Side Rendering(SSR)
+
+-   HTML 파일이 매 요청마다 생성된다.
+-   따라서 항상 최신 상태를 유지한다.
+-   `getServerSideProps`
+-   예시) 커뮤니티 게시판
+
+#### Incremental Static Regeneration(ISR)
+
+-   일정 주기마다 데이터의 최신 여부를 검사해서 업데이트된 데이터로 다시 HTML을 생성한다.
+-   콘텐츠가 업데이트 되었을 때 이것이 반영되지 않는 SSG의 단점을 보완한 방식이다.
+-   `getStaticProps` 에 `revalidate` 속성을 추가하여 사용
+-   예시) 제품 상세 페이지
+
+#### Client Side Rendering(CSR)
+
+-   useEffect() 안에서 `getServerSideProps` 사용
+-   [Next.js 공식문서 CSR](https://nextjs.org/docs/pages/building-your-application/rendering/client-side-rendering)
+
+## App Router에서의 렌더링 (13버전)
+
+-   Server Component와 Client Component가 존재
+
+<img width="670" alt="스크린샷 2024-01-27 오후 8 17 46" src="https://github.com/HOJOON07/react-deepdive-study/assets/108623656/1b490bd1-7154-4371-86b5-57b81a1259f6">
+
+-   Next.js의 SSR, SSG, ISR은 Fetch에 어떤 옵션을 주느냐에 따라 다르게 동작한다.
+-   기본적으로 fetch에 아무런 옵션을 주지 않으면 자동으로 무기한 캐시한다. (SSG, ‘force-cache’)
+    -   `fetch('https://...')`
+-   fetch에 옵션으로 `{ cache: ‘no-store’ }` 를 주면 SSR로 동작한다. (SSR, 동적 데이터)
+    -   `fetch('https://...', { cache: 'no-store' })`
+-   타임 인터벌에 따라 캐시된 데이터를 재검증하려면, fetch()에서 next.revalidate 옵션을 사용하여 리소스의 캐시 수명(초 단위)을 설정할 수 있다. (ISR)
+    -   Time-base revalidation과 On-demand revalidation이 존재
+    -   `fetch('https://...', { next: { revalidate: 10 } })`
+    -   On-demand revalidation
+    ```ts
+    export default async function Page() {
+        const res = await fetch('https://...', { next: { tags: ['collection'] } });
+        const data = await res.json();
+        // ...
+    }
+    ```
+-   그러나 각 layout.tsx에서 dynamic 옵션을 설정하면 이 옵션을 완전히 동적이거나 완전히 정적으로 바꿀 수 있다.
+
+```ts
+export const dynamic = 'auto';
+// 'auto' | 'force-dynamic' | 'error' | 'force-static'`
+```
+
+-   [File Conventions: Route Segment Config](https://nextjs.org/docs/app/api-reference/file-conventions/route-segment-config)
+
+-   현재 렌더링이 어떤 방식으로 되고 있는지 궁금하다면 빌드 시에 확인할 수 있다.
+    ![스크린샷 2023-11-17 오후 5 16 34](https://github.com/HOJOON07/react-deepdive-study/assets/108623656/52739f71-4bf7-4060-8532-ae122e4aea19)
+    ![스크린샷 2023-11-17 오후 5 16 41](https://github.com/HOJOON07/react-deepdive-study/assets/108623656/6947f23f-93ae-4c74-9d59-25ab6bb0676c)
+
+-   사람 인 같은 모양이 SSR, 동그라미 모양이 SSG로 되어있다는 뜻이다.

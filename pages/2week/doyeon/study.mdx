@@ -124,50 +124,6 @@ DOM은 웹페이지에 대한 인터페이스로 브라우저가 웹페이지의
 
 ### 2.3.1 클래스형 컴포넌트
 
-기본적인 클래스형 컴포넌트의 구조이다.
-
-```jsx
-import React from 'react'
-
-class SampleComponent extends React.Component {
-	render() {
-		return <h2>Sample Component</h2>
-	}
-}
-```
-
-```jsx
-import React from 'react'
-
-// props 타입을 선언한다.
-interface SampleProps {
-	required?: boolean
-	text: string
-}
-
-// state 타입을 선언한다.
-interface SampleState {
-	count: number
-	isLimited?: boolean
-}
-
-// Component에 제네릭으로 props, state를 순서대로 넣어준다.
-class SampleComponent extends React.Component<SampleProps, SampleState> {
-
-	// countructor에서 props를 넘겨주고, state의 기본값을 설정한다.
-	private constructor(props: SampleProps) {
-		super(props)
-		this.state = {
-			count: 0,
-			... 어쩌구 다시 공부해야함
-		}
-	}
-	render() {
-		return <h2>Sample Component</h2>
-	}
-}
-```
-
 📍 **클래스형 컴포넌트의 생명주기 메서드**
 
 - 마운트(mount) : 컴포넌트가 마운팅(생성)되는 시점
@@ -262,7 +218,6 @@ static으로 선언돼 있어 this에 접근할 수 없다. |
 - 렌더 단계 : 컴포넌트를 렌더링하고 변경 사항(type, props,key)을 계산하는 모든 작업을 말한다.
 - 커밋 단계 : 렌더 단계의 변경 사항을 실제 DOM에 적용해 사용자에게 보여주는 과정을 말한다. (생략 가능)
 
-### 2.4.5 일반적인 렌더링 시나리오 살펴보기
 
 ## 2.5 컴포넌트와 함수의 무거운 연산을 기억해 두는 메모이제이션
 

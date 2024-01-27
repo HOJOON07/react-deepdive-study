@@ -23,12 +23,15 @@
 ##### JSXElementName
 
 - JSX 에 이름을 붙일 수 있는 규칙, JS 의 식별자 규칙을 다룬다
+
+```jsx
 - : 를 통해 다른 식별자를 이어주는 것 가능, 단 한번만 가능
   - 가능 : <foo:bar />
   - 불가능 : <foo:bar:baz /> 는 불가능
 - . 를 통해 다른 식별자 이어주는 것 가능, 여러번 이어서 사용 가능 단 : 와 혼용은 불가능
   - 가능 : <foo.bar /> <foo.bar.baz />
   - 불가능 : <foo:bar.baz />
+```
 
 ##### JSXAttributes
 

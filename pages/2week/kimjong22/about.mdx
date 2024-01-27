@@ -1,1 +1,55 @@
-## 이야기해보기 파일
+### 2.5 메모이제이션
+
+#### 리액트 렌더링이란?
+
+useMemo, useCallback 훅과 고차 컴포넌트인 memo는 리액트에서 발생하는 렌더링을 최소한으로 줄이기 위한 훅
+
+---
+
+**1. React.memo()**
+
+**[DO USE]**
+
+- 컴포넌트가 리액트 트리에서 중위-상위 레벨에 해당하는 경우 (Header, Footer, Layout HOC)
+- props가 단순하고 자주 바뀌지 않을 경우
+- props가 복잡한 Object일 때
+
+**[DO NOT USE]**
+
+- props가 항상 바뀌는 경우가 대부분일 때
+- custom 비교 함수를 작성하지 않은 객체 타입을 props로 넘길 때
+  - 리액트 특성상 shallow 비교 방식을 사용하므로 두번째 인자로 custom 함수를 작성할 것이 아니라면 사용하는 의미가 없다.
+
+---
+
+**2. useMemo, useCallback**
+
+**[DO USE]**
+
+- 값을 얻어낼 때 마다 복잡한 로직을 사용해야 할 때
+- 렌더링 할 때 마다 비용 소모가 클 때
+- **props로 넘어갈 때 참조 투명성을 유지**하기 위해 사용하는 것이 좋다.
+
+**[DO NOT USE]**
+
+- 값이 단순할 때 useMemo를 사용하면 오히려 가독성이 떨어진다.
+- 비용소모가 크지 않은 함수일 때
+- 해당 함수/변수를 component scope 밖으로 옮길 수 있을 때
+
+---
+
+#### 현업에서의 성능 최적화
+
+글쓴이는 성능에 대해 깊게 연구해 볼 시간적 여유가 없는 상황이라면 일단 의심스러운 곳에는 먼저 다 적용해 볼 것을 권장
+
+---
+
+useMemo, useCallback 상태일 때 성능비교를 정리해놓은 medium 글을 공유합니다.
+
+- 작은 규모에서는 유의미한 성능 최적화는 없다고 합니다.
+- 규모가 커질수록 조금씩 성능상의 이점이 있는 것으로 확인되었습니다.
+- 개인적인 의견으로는 함수가 useEffect의 디펜던시로 들어가는 경우나 props로 넘어가는 상황을 고려하여 함수를 useCallback으로 최적화 하는 것은 좋다고 생각합니다.
+  [useMemo, useCallback을 언제 써야되나?](https://haragoo30.medium.com/usememo-usecallback%EC%9D%84-%EC%96%B8%EC%A0%9C-%EC%8D%A8%EC%95%BC%EB%90%98%EB%82%98-6a5e6f30f759)
+
+참고 문서
+[[ReactJS] 메모제이션으로 리액트 성능을 올려보자](https://github.com/uu29/TIL/blob/main/%5BReactJS%5D%20%EB%A9%94%EB%AA%A8%EC%A0%9C%EC%9D%B4%EC%85%98%EC%9C%BC%EB%A1%9C%20%EB%A6%AC%EC%95%A1%ED%8A%B8%20%EC%84%B1%EB%8A%A5%EC%9D%84%20%EC%98%AC%EB%A0%A4%EB%B3%B4%EC%9E%90.md)

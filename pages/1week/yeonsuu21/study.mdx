@@ -28,7 +28,12 @@ isHeading ? ’hl’ : ’span’,
 ### 2.3 클래스형 컴포넌트와 함수형 컴포넌트
 
 #### 클래스형 컴포넌트
-- 'class SampleComponent extends React.Component{}' 의 형식
+- 
+```jsx 
+class SampleComponent extends React.Component{}
+```
+의 형식
+
 - 한계 
 - 데이터의 흐름을 추적하기 어럽다
 - 애플리케이선 내부 로직의 재사용이 어렵다
@@ -39,7 +44,10 @@ isHeading ? ’hl’ : ’span’,
 
 
 #### 함수형 컴포넌트
-- 'export function SampleComponent({ required, text }: SampleProps) {}' 형식
+- 
+```jsx
+export function SampleComponent({ required, text }: SampleProps) {}
+```  형식
 
 
 #### 함수형 컴포넌트 vs 클래스형 컴포넌트

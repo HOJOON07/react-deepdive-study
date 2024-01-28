@@ -1,1 +1,50 @@
 ## 이야기해보기 파일
+### p.127
+
+> props 여부에 따라 children 요소만 달라지는 경우, 전체 내용을 삼항 연산자로 처리할 필요 없음
+> 
+> 
+> → 불필요한 코드 중복이 발생
+> 
+> ```tsx
+> function TextOrHeading({
+>   isHeading,
+>   children,
+> }: PropsWithChildren<{ isHeading: boolean }>) {
+>   return isHeading ? (
+> 		<h1 className='text'>{children}</h1>
+> 	) : (
+> 		<span className='text'>{children}</span>
+> 	)
+> }
+> 
+> // JSX가 변환되는 특성을 활용하여 코드 개선
+> import { createElement } from "react";
+> 
+> function TextOrHeading({
+>   isHeading,
+>   children,
+> }: PropsWithChildren<{ isHeading: boolean }>) {
+>   return createElement(isHeading ? "hi" : "span", {
+>     className: "text",
+>     children,
+>   });
+> }
+> ```
+> 
+
+첫 번째 버전의 코드를 아래와 같이 개선한 코드를 보았는데, 실제로 코드 중복을 줄이기 위해 createElement를 사용해 코드를 개선할까?
+
+### p.153
+
+> PureComponent는 **얕은 비교**만 수행하기 때문에 state 객체와 같은 복잡한 구조의 데이터 변경 감지 X
+> 
+> 
+> → 컴포넌트가 얕은 비교를 했을 때 일치하지 않는 일이 더 잦다면 비교가 무의미해짐. 성능에 역효과
+> 
+> → PureComponent는 필요한 곳에만 사용하기
+> 
+
+리액트 딥다이브 1장에서 props의 경우, 동등 비교 시 얕은 비교로 충분하다는 내용을 읽었던 기억이 남.
+
+props와 같은 **간단한 데이터 구조**의 경우 얕은 비교로 충분하지만, state와 같은 **복잡한 구조**의 데이터의 경우에는 얕은 비교에는 한계가 있다. > 라고 이해했는데 맞나?

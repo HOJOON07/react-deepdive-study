@@ -14,3 +14,365 @@
 ```bash
 npm i install
 ```
+
+- 사용
+
+```jsx
+import "./SassBtn.scss";
+```
+
+### CSS 파트, SassBtn.scss
+
+```css
+$green: #1ed760;
+$blue: #3f95f1;
+
+@mixin button-color($color) {
+  background-color: $color;
+
+  &:hover {
+    background: lighten($color, 10%);
+  }
+}
+
+.SassBtn {
+  display: inline-block;
+  outline: none;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  border-radius: 500px;
+  border: 1px solid transparent;
+  letter-spacing: 2px;
+  min-width: 160px;
+  font-weight: 700;
+  text-align: center;
+  padding: 17px 48px;
+  color: #fff;
+  background-color: #f74343;
+  height: 48px;
+
+  &:hover {
+    transform: scale(1.04);
+    background-color: #f74343;
+  }
+
+  &.green {
+    @include button-color($green);
+  }
+
+  &.blue {
+    @include button-color($blue);
+  }
+}
+```
+
+### 컴포넌트 파트, SassBtn.jsx
+
+```jsx
+import "./SassBtn.scss";
+import classNames from "classnames";
+
+export default function SassBtn({ variant }) {
+  return (
+    <button className={classNames("SassBtn", variant && variant)}>
+      SASS BUTTON
+    </button>
+  );
+}
+```
+
+### 호출 파트, App.jsx
+
+```jsx
+import SassBtn from "./components/SassBtn";
+
+function App() {
+  return (
+    <>
+      <div className="App">
+        <SassBtn />
+        <SassBtn variant="blue" />
+        <SassBtn variant="green" />
+      </div>
+    </>
+  );
+}
+
+export default App;
+```
+
+## Styled-Components
+
+### 설치 및 사용
+
+- 설치
+
+```bash
+npm i styled-components
+```
+
+- 사용
+
+```jsx
+import "./SassBtn.scss";
+```
+
+### CSS 파트, only styled-components
+
+```jsx
+import styled from "styled-components";
+
+const colorVariant = {
+  green: "background-color:#1ed760",
+  blue: "background-color: #3f95f1",
+};
+
+const colorSet = (color) => {
+  return `background-color: ${color}`;
+};
+
+const BtnStyle = styled.button`
+  display: inline-block;
+  outline: none;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  border-radius: 500px;
+  border: 1px solid transparent;
+  letter-spacing: 2px;
+  min-width: 160px;
+  font-weight: 700;
+  text-align: center;
+  padding: 17px 48px;
+  color: #fff;
+  background-color: #f74343;
+  ${(props) =>
+    props.variant ? colorVariant[props.variant] : colorSet(props.color)};
+  height: 48px;
+
+  &:hover {
+    transform: scale(1.04);
+    background-color: #f74343;
+    ${(props) =>
+      props.variant ? colorVariant[props.variant] : colorSet(props.color)};
+  }
+`;
+```
+
+### 컴포넌트 파트, only styled-components
+
+```jsx
+export default function StyledBtn({ variant, color }) {
+  return <BtnStyle color={finalColor}>StyledBtn</BtnStyle>;
+}
+```
+
+### CSS 파트, js 사용
+
+```js
+const BtnStyle = styled.button`
+  display: inline-block;
+  outline: none;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  border-radius: 500px;
+  border: 1px solid transparent;
+  letter-spacing: 2px;
+  min-width: 160px;
+  font-weight: 700;
+  text-align: center;
+  padding: 17px 48px;
+  color: #fff;
+  background-color: #f74343;
+  background-color: ${(props) => props.color};
+  height: 48px;
+
+  &:hover {
+    transform: scale(1.04);
+    background-color: #f74343;
+    background-color: ${(props) => props.color};
+  }
+`;
+```
+
+### JSX 파트, js 사용
+
+```jsx
+export default function StyledBtn({ variant, color }) {
+  const colorVariant = {
+    green: "#1ed760",
+    blue: "#3f95f1",
+  };
+
+  const finalColor = variant ? colorVariant[variant] : color;
+
+  return <BtnStyle color={finalColor}>StyledBtn</BtnStyle>;
+}
+```
+
+### 호출 파트, App.jsx
+
+```jsx
+import StyledBtn from "./components/StyledBtn";
+
+function App() {
+  return (
+    <>
+      <div className="App">
+        <StyledBtn />
+        <StyledBtn variant="blue" />
+        <StyledBtn variant="green" />
+        <StyledBtn color="#000" />
+      </div>
+    </>
+  );
+}
+```
+
+## Tailwindcss
+
+### 설치 및 사용
+
+- 설치
+
+```bash
+npm i -D tailwindcss
+npx tailwindcss init
+```
+
+- tailwind.config.js 파일 생성
+
+```jsx
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: ["./src/**/*.{js,jsx,ts,tsx}"],
+  theme: {},
+  plugins: [],
+};
+```
+
+- index.css 에 코드 추가
+
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+### CSS 파트
+
+#### index.css
+
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --red-color: #f74343;
+  --blue-color: #3f95f1;
+  --green-color: #1ed760;
+}
+```
+
+#### tailwind.config.js
+
+```js
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: ["./src/**/*.{js,jsx,ts,tsx}"],
+  theme: {
+    extend: {
+      colors: {
+        "red-color": "var(--red-color)",
+        "blue-color": "var(--blue-color)",
+        "green-color": "var(--green-color)",
+      },
+    },
+  },
+  plugins: [],
+};
+```
+
+### 컴포넌트 파트
+
+```jsx
+import classNames from "classnames";
+
+export default function TailwindBtn({ color }) {
+  const btnColors = {
+    red: "bg-red-color",
+    blue: "bg-blue-color",
+    green: "bg-green-color",
+  };
+
+  return (
+    <button
+      className={classNames(
+        `px-10 py-3 rounded-full font-bold text-center text-white tracking-widest cursor-pointer outline-none hover:scale-110`,
+        color ? btnColors[color] : btnColors["red"]
+      )}
+    >
+      TailwindBtn
+    </button>
+  );
+}
+```
+
+## CSS.module
+
+### CSS 파트
+
+```css
+.moduleBtn {
+  display: inline-block;
+  outline: none;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  border-radius: 500px;
+  border: 1px solid transparent;
+  letter-spacing: 2px;
+  min-width: 160px;
+  font-weight: 700;
+  text-align: center;
+  padding: 17px 48px;
+  color: #fff;
+  background-color: #f74343;
+  height: 48px;
+
+  &:hover {
+    transform: scale(1.04);
+    background-color: #f74343;
+  }
+
+  &.green {
+    background-color: #1ed760;
+  }
+
+  &.blue {
+    background-color: #3f95f1;
+  }
+}
+```
+
+### JSX 파트
+
+```jsx
+import React from "react";
+import styles from "./ModuleBtn.module.css";
+import classNames from "classnames";
+
+export default function ModuleBtn({ variant, color }) {
+  return (
+    <button
+      className={classNames(styles.moduleBtn, variant && styles[variant])}
+      style={color && { backgroundColor: color }}
+    >
+      ModuleBtn
+    </button>
+  );
+}
+```

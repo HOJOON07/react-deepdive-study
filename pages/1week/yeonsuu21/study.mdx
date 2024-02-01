@@ -1,1 +1,68 @@
-## 정리하기 파일
+## 2. 리액트 핵심요소 깊게 살펴보기
+
+### 2-1 . 'props' 여부에 따라 'children' 요소 만 달라지는 경우
+
+굳이 번거롭게 전체 내용을 삼항 연산자로 처리할 필요가 없다. 
+이 경우 불필요한 코드 풍복이 일어난다. -> 실제로 삼항연산자 처돌이 입니다.. 
+
+```jsx
+import { createElement } from 'react’
+function TextOrHeading({
+isHeading ,
+children ,
+}: PropsWithChildren<{ isHeading: boolean }>) {
+
+return createElement(
+
+isHeading ? ’hl’ : ’span’,
+ { className : ’text' } , children ,
+)}
+```
+
+### 2-2 가상 DOM과 리액트 파이버
+- 가상 DOM은 웹페이지가 표시해야 할 DOM을 일단 메모리에 저장하고 리액트가 실제 변경에 대한 준비가 완료됐을 때 실제 브라우저의 DOM에 반영한다.
+- 리액트 파이버 : 가상 DOM과 렌더링 과정 최 적회를 기능하게 해주는 것
+- 파이버 트리 : 현재 모습을 담은 파이버 트리 , 작업 중인 상태 를 나타내는 worklnProgress 트리
+
+
+### 2.3 클래스형 컴포넌트와 함수형 컴포넌트
+
+#### 클래스형 컴포넌트
+- 
+```jsx 
+class SampleComponent extends React.Component{}
+```
+의 형식
+
+- 한계 
+- 데이터의 흐름을 추적하기 어럽다
+- 애플리케이선 내부 로직의 재사용이 어렵다
+- 기능이 많아질수록 컴포넌트의 크기가 커진다
+- 클래스는 함수에 비해 상대적으로 어렵다
+- 코드 크기를 최적화하기 어럽다
+- 핫 리로딩을 하는 데 상대적으로 불리하다
+
+
+#### 함수형 컴포넌트
+- 
+```jsx
+export function SampleComponent({ required, text }: SampleProps) {}
+```  형식
+
+
+#### 함수형 컴포넌트 vs 클래스형 컴포넌트
+
+- 생명주기메서드의부재 : 클래스형 컴포넌트의 생명주기 메서드가 함수형 컴포넌트에서는 존재하지 않음 
+                    -> 함수형 컴포넌트는 'props'를 받아 단순히 리액트 요소만 반환하는 함수인 반면, 
+                     클래스형 컴포넌트는 'render' 메서드가 있는 'React.Component'를 상속 받아 구현하는 자바스크립트 클래스이기 때문
+
+
+
+### 2.4 렌더링은 어떻게 일어나는가?
+
+리액트의 렌더링 : 'props'와 'state'의 값을 기반으로 어떻게 UI를 구 성하고 이를 바탕으로 어떤 DOM 결과를 브라우저에 제공할 것인지 계산하는 일련의 과정
+
+### 2.5 메모이제이션
+
+
+

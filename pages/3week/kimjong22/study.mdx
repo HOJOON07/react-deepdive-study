@@ -114,17 +114,15 @@ export function useCallback(callback, args) {
   - useRef는 반환값인 객체 내부에 있는 current에 접근, 변경할 수 있다.
   - useRef는 그 값이 변하더라도 렌더링을 발생시키지 않는다.
 - useRef의 최초 기본 값은 return문에 정의해 둔 DOM이 아닌 useRef()로 넘겨받은 인수
-- useRef의 실제 값은 {current: value}와 같은 객체 형태
+- useRef의 실제 값은 `{current: value}`와 같은 객체 형태
 
 ```javascript
-
 // 렌더링에 영향을 미치면 안되기에 의존성 배열에 [] 선언
 // => 각 렌더링마다 동일한 객체를 가리키는 결과
-export function useRef(initialValue){
+export function useRef(initialValue) {
   currentHook = 5;
-  return useMemo(() => ({current: initialValue), [])
+  return useMemo(() => ({ current: initialValue }), []);
 }
-
 ```
 
 ---

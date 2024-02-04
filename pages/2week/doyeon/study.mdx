@@ -132,29 +132,21 @@ DOM은 웹페이지에 대한 인터페이스로 브라우저가 웹페이지의
 
 📍 **생명주기 메서드**
 
-| render() | 컴포넌트가 UI를 렌더링하기 위해 쓰임
-부수 효과가 없어야 한다. (state를 변경하는 일 등) |
-| --- | --- |
+| render() | 컴포넌트가 UI를 렌더링하기 위해 쓰임. 부수 효과가 없어야 한다. (state를 변경하는 일 등) |
+| :--- | :--- |
 | componentDidMount() | 컴포넌트가 마운트되고 준비되는 즉시 실행 |
-| componentDidUpdate() | 컴포넌트 업데이트가 일어난 이후 바로 실행
-state나 props의 변화에 따라 DOM을 업데이트하는 등에 쓰인다. |
-| componentWillUnmount() | 컴포넌트가 언마운트되거나 더 이상 사용되지 않기 직전에 호출
-이벤트, 타이머를 지우거나, API 호출 취소 등의 작업을 하는 데 유용하다. |
-| shouldComponentUpdate() | 컴포넌트에 영향을 받지 않는 변화에 대해 정의
-state나 props의 변경으로 리액트 컴포넌트가 다시 리렌더링되는 것을 막을 때 사용한다. |
-| static getDerivedStateFromProps() | render()를 호출하기 직전에 호출
-static으로 선언돼 있어 this에 접근할 수 없다. |
-| getSnapShotBeforeUpdate() | DOM이 업데이트되기 직전에 호출
-윈도우 크기를 조절하거나 스크롤 위치를 조정하는 등의 작업을 하는 데 유용하다. |
+| componentDidUpdate() | 컴포넌트 업데이트가 일어난 이후 바로 실행.  state나 props의 변화에 따라 DOM을 업데이트하는 등에 쓰인다. |
+| componentWillUnmount() | 컴포넌트가 언마운트되거나 더 이상 사용되지 않기 직전에 호출.  이벤트, 타이머를 지우거나, API 호출 취소 등의 작업을 하는 데 유용하다. |
+| shouldComponentUpdate() | 컴포넌트에 영향을 받지 않는 변화에 대해 정의.  state나 props의 변경으로 리액트 컴포넌트가 다시 리렌더링되는 것을 막을 때 사용한다. |
+| static getDerivedStateFromProps() | render()를 호출하기 직전에 호출.  static으로 선언돼 있어 this에 접근할 수 없다. |
+| getSnapShotBeforeUpdate() | DOM이 업데이트되기 직전에 호출. 윈도우 크기를 조절하거나 스크롤 위치를 조정하는 등의 작업을 하는 데 유용하다. |
 
 📍 **에러 상황에서 실행되는 메서드**
 
-| static getDerivedStateFromError() | 자식 컴포넌트에서 에러가 발생했을 때 호출되는 에러 메서드
-반드시 state 값을 반환해야 한다. |
-| --- | --- |
+| static getDerivedStateFromError() | 자식 컴포넌트에서 에러가 발생했을 때 호출되는 에러 메서드. 반드시 state 값을 반환해야 한다. |
+| :--- | :--- |
 | componentDidCatch | getDerivedStateFromError에서 에러를 잡고 state를 결정한 이후에 실행된다. |
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/ef0e9d83-accc-43c2-9de2-d86a3439e204/1c445d2a-6038-4935-a0f2-614228f3329a/Untitled.png)
 
 📍 **클래스형 컴포넌트의 한계**
 
@@ -221,15 +213,15 @@ static으로 선언돼 있어 this에 접근할 수 없다. |
 
 ## 2.5 컴포넌트와 함수의 무거운 연산을 기억해 두는 메모이제이션
 
-> ***메모이제이션**
+> **메모이제이션**
 연산의 결과값을 메모리에 저장해두고 이전 값과 결과가 동일할 때 재사용하는 기법
 
-**React에서 제공하는 메모이제이션 기법***
+**React에서 제공하는 메모이제이션 기법**
 > 
 > 
-> `*React.memo()`는 props의 값으로 변경을 확인한다.*
+> `React.memo()`는 props의 값으로 변경을 확인한다.
 > 
-> `*useCallback()`과  `useMemo()`는 dependency 배열 내부의 값으로 변경사항을 확인한다.*
+> `useCallback()`과  `useMemo()`는 dependency 배열 내부의 값으로 변경사항을 확인한다.
 > 
 
 ### 2.5.1 주장 1: 섣부른 최적화는 독이다. 꼭 필요한 곳에만 메모이제이션을 추가하자

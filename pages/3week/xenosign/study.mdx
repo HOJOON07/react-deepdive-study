@@ -1,1 +1,799 @@
-## 정리하기 파일
+# 03. 리액트 훅 깊게 살펴보기
+
+## 3.1 리액트의 모든 훅 파헤치기
+
+### 3.1.1 useState
+
+- 함수 컴포넌트 내부에서 상태를 정의하고, 이 상태를 관리할 수 있게 해주는 훅
+
+#### useState 구현 살펴보기
+
+- state 초깃값을 넘겨 주지 않으면 undefined 로 설정
+
+\*\* [p. 194] SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED 변수명 잼나네요 ㅋㅋ
+
+#### 게으른 초기화(Lazy initializtion)
+
+- useState 에 변수 대신 함수를 넘기는 것
+- 공식문서에는 useState 의 초깃값이 복잡하거나 무거운 연산 포함시에 사용을 권고
+- 리렌더링이 발생하면 함수의 실행은 무시
+
+```jsx
+// 일반적 사용
+const [count, setCount] = useState(
+  Number.parseInt(window.localStorage.getItem(cacheKey))
+);
+
+// 게으른 초기화
+const [count, setCount] = useState(() =>
+  Number.parseInt(window.localStorage.getItem(cacheKey))
+);
+```
+
+- 예제 코드
+
+```jsx
+function App() {
+  const [state, setState] = useState(() => {
+    // 최초 설정 시, 1번만 실행 된다
+    console.log("복잡한 연산");
+    return 0;
+  });
+
+  return (
+    <>
+      <h1>{state}</h1>
+      <button onClick={() => setState((prev) => prev + 1)}>리렌더링</button>
+    </>
+  );
+}
+```
+
+- 최초 실행시 한번만 실행이 되고, 리렌더링 시 다시 실행이 안되므로 낭비 없이 효율적으로 사용이 가능하다
+- localStorage / sessionStorage 접근 이나 배열 함수에 대한 접근, 초깃값 계산이 복잡한 경우 사용하면 좋다
+
+\*\* 이거 예전에 경은님이 질문 했었는데, 그땐 답변을 못드렸는데 이렇게 배웁니다 ㅋㅋㅋ
+
+### 3.1.2 useEffect
+
+- 컴포넌트의 내부 값을 활용하여 동기적으로 부수 효과를 만드는 매커니즘을 제공하는 훅
+
+#### useEffect 란?
+
+- 특별한 기능을 사용하는 것이 아니라, 의존성에 있는 값을 보면서 의존성의 값이 이전과 하나라도 다른게 있으면 부수 효과를 실행하는 평범한 함수
+- state 와 props 의 변화로 발생하는 렌더링 과정에서 실행되는 부수 효과 함수
+
+#### 클린업 함수의 목적
+
+- 이벤트를 등록하고 지울 때 사용해야 한다?
+
+```jsx
+function App() {
+  const [counter, setCounter] = useState(0);
+
+  useEffect(() => {
+    const addMouseEvent = () => {
+      console.log(counter);
+    };
+
+    window.addEventListener("click", addMouseEvent);
+
+    return () => {
+      console.log("클린업 함수 실행!", counter);
+      window.removeEventListener("click", addMouseEvent);
+    };
+  }, [counter]);
+
+  return (
+    <>
+      <h1>{counter}</h1>
+      <button onClick={() => setCounter((prev) => prev + 1)}>리렌더링</button>
+    </>
+  );
+}
+```
+
+```jsx
+// 실행 결과
+
+// 클린업 함수 실행! 0
+// 1
+
+// 클린업 함수 실행! 1
+// 2
+```
+
+- 클린업 함수는 이전의 counter 를 참조해서 실행이 된다
+- 새로운 값과 함께 렌더링 된 후, 다음 렌더링이 시작되기 전에 실행된다. 그리고 이 때에 참조하는 값은 이전 렌더링의 값이다
+- 따라서, 클린업을 제대로 설정하지 않을 경우 특정 이벤트 핸들러가 무한히 추가되는 문제가 발생 가능
+- 클래스형 컴포넌트의 생명주기 메서드는 컴포넌트가 DOM 에서 사라질 때를 기준으로 하지만, useEffect 는 말그대로 이전 상태를 청소해 주는 개념으로 작동한다
+
+#### 의존성 배열
+
+- 빈 배열 -> 최초 마운트 시 한번만 실행
+- 빈 값 -> 렌더링 시 마다 실행
+- 빈 값을 의존성 배열로 가지는 useEffect 는 컴포넌트가 랜더링 된 이후에 실행 된다. 렌더링 시에 실행되는 내부 함수와는 다른 특성을 가진다
+
+#### useEffect 를 사용할 때, 주의할 점
+
+##### eslint-disable-line react-hooks/exhaustive-deps 주석은 최대한 피하라
+
+- 즉, 빈배열을 의존성 배열로 가지는 useEffect 사용은 최대한 자제할 것
+- 클래스형 컴포넌트의 componentDidMount 의 개념으로 사용하는데 이렇게 될 경우 버그의 가능성을 가진다
+
+```jsx
+function Component(log) {
+  useEffect(() => {
+    logging(log);
+  }, []);
+}
+```
+
+- 해당 코드는 해당 log 가 넘어와 최초로 렌더링 된 시점에 한번만 실행된다
+- 하지만 log 가 아무리 변하여도 log 를 기록하는 부수효과는 실행이 안되는 구조를 가지기 때문에 props 의 흐름을 해치게 된다
+- 위와 같은 코드는 해당 컴포넌트를 호출하는 부모 컴포넌트에서 해당 log 가 발생하는 시점에서 logging 함수를 실행하는 방법으로 처리하는 것이 더 좋은 방법이다
+
+##### useEffect 의 첫번째 인수에 함수명을 부여하라
+
+- 함수명을 부여하여 useEffect 의 부수효과를 단번에 알 수 있도록 하는 것은 가독성에 도움이 된다
+
+```jsx
+// 함수명을 안 붙인 경우
+useEffect(() => {
+  logging(user.id);
+}, [user.id]);
+
+// 함수명을 붙인 경우
+useEffect(
+  logActiveUser() => {
+    logging(user.id);
+  },
+  [user.id]
+);
+```
+
+##### 거대한 useEffect 를 만들지 마라
+
+- useEffect 는 의존성 배열을 바탕으로 렌더링 시 부수효과를 실행하므로 부수효과가 커질 수록 성능에 악영향을 미친다
+- useEffect 가 거대해야 한다면, 최대한 적은 의존성 배열을 사용하는 여러개의 useEffect 로 분리하는게 좋다
+- 위의 상황이 불가피하면 useCallback, useMemo 로 정제한 내용만 useEffect 에 들어가도록 하여 성능 이슈를 줄이고, 언제 useEffect 가 싱행되는지 명확하게 알 수 있다
+
+##### 불필요한 외부 함수를 만들지 마라
+
+```tsx
+function Component({ id }: { id: string }) {
+  const [info, setInfo] = useState<number | null>(null);
+  const contollerRef = useRef<AbortController | null>(null);
+  const fetchInformation = useCallback(async (fetchId: string) => {
+    controllerRef.current?.abort();
+    controllerRef.current = new AbortController();
+
+    const result = await fetchInfo(fetchId, { signal: controllerRef.signal });
+    setInfo(await result.json());
+  }, []);
+
+  useEffect(() => {
+    fetchInformation(id);
+    return () => controllerRef.current?.abort();
+  }, [id, fetchInformation]);
+
+  return <div>{/* 렌더링 */}</div>;
+}
+```
+
+- 위의 코드는 props 를 받아서 해당 정보를 바탕으로 API 를 호출하는 useEffect 를 가지는데, useEffect 밖에서 함수를 선언하다보니 불필요한 코드가 많아지고 가독성이 떨어진다
+
+```tsx
+// 수정버전
+function Component({ id }: { id: string }) {
+  const [info, setInfo] = useState<number | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+  (async () => {
+    const result = await fetchInfo(id. {signal: controller.signal});
+    setInfo(await result.json());
+  })();
+
+  return () => controller.abort();
+  }, [id]);
+
+  return <div>{/* 렌더링 */}</div>;
+}
+```
+
+- 위와 같이 수정 시, 코드도 간결해지고 의존성 배열도 줄어들며 무한 루프를 막기 위해 넣었던 코드인 useCallback 도 삭제 가능
+
+\*\* 즉시 실행 함수(IIFE)에 활용에 대해서는 어찌 생각하시나요? 전역 변수 생성 억제 또는 은닉화에는 도움을 주지만 초기 코드 작성에 있어서 IIFE 를 많이 사용하면 가독성 및 코드 재사용성은 안좋다고 생각하는데요. 다들 어떻게 생각하시나요?
+
+##### 왜? useEffect 의 콜백 인수로 비동기 함수를 바로 넣을 수 없을까?
+
+- useEffect 의 콜백 인수로 미동기 함수로 넣을 경우 useEffect 의 경쟁 상태(race condition)를 유발 가능
+- 응답 시간에 따라 이전 state 의 값을 기반으로 결과가 나올 수 있다
+- useEffect 인수로 비동기 함수를 지정할 수 없을 뿐, 실행은 문제가 없으므로 내부에서 선언해서 실행하는 방법으로 해결 가능
+
+```jsx
+useEffect(() => {
+  let shouldIgnore = false;
+
+  const fetchData = async () => {
+    const response = await fetch("http://");
+    const result = await response.json();
+
+    if (!shouldIgnore) setDate(result);
+  };
+
+  fetchData();
+
+  // useFFect 실행 시 마다 함수 생성 및 실행이 반복 되므로, 클린업을 이용하여 비동기 함수에 대한 처리를 하는 것이 좋다
+  // AbortController 를 통해 직전 요청 자체를 취소하는 방법도 있다
+  return () => (shouldIgnore = true);
+}, []);
+```
+
+\*\* [p. 208] 이거 왜 어떨 땐, JS 어떨 땐 TS 번갈아 쓰는 걸까요? ㅋㅋㅋㅋ
+
+### 3.1.4 useCallback
+
+- useCallback 은 인수로 넘겨 받은 콜백 자체를 기억, 함수를 새로 만들지 않고 재사용
+- 아래의 경우 props 로 넘겨 받는 함수가 계속 재생성 되어, ChildComponent 가 전부 리렌더링 되는 것을 볼 수 있다
+
+```jsx
+const ChildComponent = memo(({ name, value, onChange }) => {
+  useEffect(() => {
+    console.log("렌더링", name);
+  });
+
+  return (
+    <>
+      <h1>
+        {name} {value ? "켜짐" : "꺼짐"}
+      </h1>
+      <button onClick={onChange}>토글</button>
+    </>
+  );
+});
+
+function App() {
+  const [status1, setStatus1] = useState(false);
+  const [status2, setStatus2] = useState(false);
+
+  const toggle1 = () => setStatus1((prev) => !prev);
+  const toggle2 = () => setStatus2((prev) => !prev);
+
+  return (
+    <>
+      <ChildComponent name="1" value={status1} onChange={toggle1} />
+      <ChildComponent name="2" value={status2} onChange={toggle2} />
+    </>
+  );
+}
+
+export default App;
+```
+
+- useCallback 을 사용하여 함수를 기억시키면, props 로 전달되는 onChange 값이 변하지 않으므로 불필요한 재생성을 막을 수 있다
+- useCallback 의 첫번째 인수로 기명 함수를 전달할 경우, 함수 추적이 용이하여 디버깅에 좋다
+
+```jsx
+// ChildComponent 코드
+
+function App() {
+  const [status1, setStatus1] = useState(false);
+  const [status2, setStatus2] = useState(false);
+
+  const toggle1 = useCallback(
+    function toggle1() {
+      setStatus1((prev) => !prev);
+    },
+    [setStatus1]
+  );
+
+  const toggle2 = useCallback(
+    function toggle2() {
+      setStatus2((prev) => !prev);
+    },
+    [setStatus2]
+  );
+
+  return (
+    <>
+      <ChildComponent name="1" value={status1} onChange={toggle1} />
+      <ChildComponent name="2" value={status2} onChange={toggle2} />
+    </>
+  );
+}
+```
+
+#### useCallback 은 useMemo 로 구현이 가능하다
+
+- useMemo 는 값을, useCallback 은 콜백을 기억하는 기능을 하므로 useMemo 를 통해 useCallback 구현이 가능하다
+- 단, 코드가 길어지기 때문에 + 직관적 사용을 위하여 useCallback 을 지원하는 것으로 보인다
+
+```jsx
+const handleClick1 = useCallback(() => {
+  setCounter((prev) => prev + 1);
+}, [counter]);
+
+const handleClick2 = useMemo(() => {
+  return () => setCounter((prev) => prev + 1);
+}, []);
+```
+
+### 3.1.5 useRef
+
+- useState 와 마찬가지로 렌더링이 발생해도 변경 가능한 상태값을 저장
+- useState 와 달리, 객체 내부의 값에 current 로 접근이 가능하며 값이 변경되어도 렌더링이 발생하지 않는다
+- 보통 DOM 에 접근하기 위해 사용. 단, 최초 선언 시 초깃값은 DOM 의 값이 아니라 useRef 로 전달한 값이 들어간다
+
+```jsx
+import React, { useEffect, useRef, useState } from "react";
+
+function usePrevious(value) {
+  const ref = useRef();
+
+  // value 가 변경되면, value 값을 ref 어 넣어둔다
+  useEffect(() => {
+    ref.current = value;
+  }, [value]);
+
+  return ref.current;
+}
+
+export default function SomeComponent() {
+  const [counter, setCounter] = useState(0);
+  const previousCounter = usePrevious(counter);
+
+  const handleClick = () => {
+    setCounter((prev) => prev + 1);
+  };
+
+  return (
+    <div>
+      <button onClick={handleClick}>
+        {counter} / {previousCounter}
+      </button>
+    </div>
+  );
+}
+```
+
+### 3.1.6 useContext
+
+#### Context 란?
+
+- 컴포넌트 중첩이 많아질 경우, props 로 하위 컴포넌트까지 값을 내리기 힘든 경우가 발생한다 (props drilling)
+- 위와 같은 문제점을 해결하기 위해, 선언한 하위 컴포넌트에 바로 값을 보내기 위한 방법
+
+#### Context 를 사용할 수 있게 해주는 useContext 훅
+
+- 상위 컴포넌트에서 선언 된 `<Context.Provider />` 에서 제공한 값 사용 가능
+- 여러개가 선언 된 경우, 가까이 있는 Provider 의 값을 가져온다
+- 컴포넌트가 복잡해 질 수록, Context 가 존재하지 않아 에러가 날 수 있으니 유의해서 사용이 필요하다
+
+```jsx
+import React, { createContext, useContext } from "react";
+
+const Context = createContext(undefined);
+
+const ChildComponent = () => {
+  const value = useContext(Context);
+
+  return <>{value ? value.hello : ""}</>;
+};
+
+export default function UseContext() {
+  return (
+    <>
+      <Context.Provider value={{ hello: "react" }}>
+        <Context.Provider value={{ hello: "js" }}>
+          <ChildComponent />
+        </Context.Provider>
+      </Context.Provider>
+    </>
+  );
+}
+```
+
+#### useContext 사용할 때 주의할 점
+
+- useContext 를 사용하면 Provider 에 의존성을 가지게 되므로 컴포넌트의 재활용이 어려워 진다
+- 그렇다고 최상위 컴포넌트에 모든 컨텍스트를 넣는 것은 불필요한 리소스 낭비가 된다
+- useContext 는 주입된 상태를 사용할 수 있을 뿐, 렌더링 최적화 등의 기능은 제공하지 않는다.
+
+```jsx
+import React, { createContext, useContext, useEffect, useState } from "react";
+
+const Context = createContext(undefined);
+
+function useMyContext() {
+  const context = useContext(Context);
+  if (context === undefined) throw new Error("Contet 를 받아올 수 없습니다");
+
+  return context;
+}
+
+const GrandChildComponent = () => {
+  const { hello } = useMyContext();
+
+  useEffect(() => {
+    console.log("GrandChildComponent 렌더링");
+  });
+
+  return <h1>{hello}</h1>;
+};
+
+const ChildComponent = () => {
+  useEffect(() => {
+    console.log("ChildComponent 렌더링");
+  });
+
+  return <GrandChildComponent />;
+};
+
+export default function UseContext() {
+  const [text, setText] = useState("");
+
+  const handleChange = (e) => {
+    setText(e.target.value);
+  };
+
+  useEffect(() => {
+    console.log("UseContext 렌더링");
+  });
+
+  return (
+    <>
+      <input value={text} onChange={handleChange} />
+      <Context.Provider value={{ hello: text }}>
+        <ChildComponent />
+      </Context.Provider>
+    </>
+  );
+}
+```
+
+- 위의 코드는 text state 의 변화로 인해 useContext 컴포넌트가 리렌더링 되고, 그 자식인 Child, GrandChild 가 전부 리렌더링 되는 구조를 가진다
+- useContext 로 값을 받지만, 렌더링에는 아무런 영향을 주지 못한다
+
+### 3.1.7 useReducer
+
+- useState 의 심화 버전, 좀 더 복잡한 상태값을 미리 정으해 놓은 시나리오에 따라 관리 가능
+- state : useState 것과 동일
+- dispatcher : state 를 업데이트 하는 함수, setState 와 달리 action 을 넘기는 점이 다르다
+- state 업데이트를 미리 정의해둔 reducer 의 dispatch 로만 가능하게 제한하는 방법
+- state 가 복잡하여 관리가 어려운 경우, 사용하면 좋다
+
+```tsx
+import { useReducer } from "react";
+
+type State = {
+  count: number;
+};
+
+type Action = { type: "up" | "down" | "reset"; payload?: State };
+
+function init(count: State): State {
+  return count;
+}
+
+const initState: State = { count: 0 };
+
+function reducer(state: State, action: Action): State {
+  switch (action.type) {
+    case "up":
+      return { count: state.count + 1 };
+    case "down":
+      return { count: state.count - 1 };
+    case "reset":
+      return init(action.payload || { count: 0 });
+    default:
+      throw new Error("예상치 못한 action 타입 입니다!");
+  }
+}
+
+export default function UseReducer() {
+  const [state, dispatcher] = useReducer(reducer, initState, init);
+
+  const handleUp = (): void => {
+    dispatcher({ type: "up" });
+  };
+
+  const handleDown = (): void => {
+    dispatcher({ type: "down" });
+  };
+
+  const handleReset = (): void => {
+    dispatcher({ type: "reset", payload: { count: 1 } });
+  };
+
+  return (
+    <div>
+      <h1>{state.count}</h1>
+      <button onClick={handleUp}>UP</button>
+      <button onClick={handleDown}>DOWN</button>
+      <button onClick={handleReset}>RESET</button>
+    </div>
+  );
+}
+```
+
+\*\* useContext, useReducer 섞어 쓰기 vs 상태 관리 라이브러리 사용하기
+\*\* 어떤 상태관리 라이브러리를 주로 쓰시나요?
+
+### 3.1.8 useImperativeHandle
+
+- 개발에 자주 사용되지는 않지만 특정 상황에서 유용하게 사용 가능
+
+#### forwardRef 살펴보기
+
+- useRef 로 HTML 요소를 props 로 보내는 경우, props 명을 ref 로 사용할 경우 리액트의 예약어와 충돌이 나는 문제가 발생
+- 물론 다른 props 명을 사용하여 전달하면 문제가 없지만, forwardRef 를 사용하면 좀 더 명확하게 사용이 가능
+
+```jsx
+import { forwardRef, useEffect, useRef } from "react";
+
+const ChildComponent = forwardRef((props, ref) => {
+  useEffect(() => {
+    console.log(ref);
+  }, [ref]);
+
+  return <div>안녕!</div>;
+});
+
+export default function ForwardRef() {
+  const inputRef = useRef();
+
+  return (
+    <div>
+      <input ref={inputRef} />
+      <ChildComponent ref={inputRef} />
+    </div>
+  );
+}
+```
+
+\*\* [p. 231] 이걸 굳이?????????? 저는 왜 쓰는지 잘 모르겠습니다. 그냥 다른 props 명 이쁘게 지어서 보내면 될거 같은데...
+
+#### useImperativeHandle 이란?
+
+- 부모에서 넘겨 받은 ref 를 원하는 대로 수정할 수 있는 훅
+- 부모로 부터 받은 ref 요소에 자식 컴포넌트에서 임의로 동작등을 추가가 가능하고 이를 바로 부모에 적용이 가능해 진다
+- 반드시 부모 컴포넌트에서 모든 것을 정의하여 내려줄 필요가 없다는 장점이 생긴다
+
+```jsx
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
+
+const Input = forwardRef((props, ref) => {
+  // useImperativeHandle 를 사용하면 ref 의 동작을 추가로 정의할 수 있다
+  useImperativeHandle(
+    ref,
+    () => ({
+      alert: () => alert(props.value),
+    }),
+    [props.value]
+  );
+
+  return <input ref={ref} {...props} />;
+});
+
+export default function UseImperativeHandle() {
+  const inputRef = useRef();
+
+  const [text, setText] = useState("");
+
+  const handleClick = () => {
+    inputRef.current.alert();
+  };
+
+  const handleChange = (e) => {
+    setText(e.target.value);
+  };
+
+  return (
+    <div>
+      <Input ref={inputRef} value={text} onChange={handleChange} />
+      <button onClick={handleClick}>Focus</button>
+    </div>
+  );
+}
+```
+
+\*\* 그런데 props 는 단방향 작동 원칙을 지켜야 하므로 전달받은 컴포넌트에서는 가급적 수정을 하지 말아야 하는데, 이런 부분은 서로 상충되지 않을까요? 사실 부모 컴포넌트에서 원하는 부분을 다 붙여서 보내주는 것이 맞다고 생각을 하는데 useImperativdHandle 을 사용해야하는 상황은 언제가 있을까요?
+
+### 3.1.9 useLayoutEffect
+
+- DOM 로딩(= 변화)이 완료 된 이후, 정의된 callback 을 실행하는 훅
+- 브라우저에 변경 사항이 반영되기 전에 실행이 되는 특성을 가진다
+- 해당 훅은 동기적으로 작동하여 useLayoutEffect 의 훅이 동작 되는 동안 렌더링이 잠시 멈추므로 성능 이슈를 일으킬 수 있다
+- 실제 실행 순서
+  - 리액트가 DOM을 업데이트
+  - useLayoutEffect 를 실행
+  - 브라우저에 변경 사항을 반영
+  - useEffect 실행
+
+### 3.1.10 useDebugValue
+
+- 리액트 어플리케이션 개발 과정에서 디버깅 하고 싶은 정보를 개발자 도구에서 볼 수 있도록 해주는 훅
+- 사용자 저으이 훅 내부의 내용 정보를 남길 수 있는 훅이다
+- 오직 다른 훅 내부에서만 실행이 가능하므로, 공통 훅을 사용할 때 디버깅 관련 정보 기록용으로 사용이 용이하다
+
+### 3.1.11 훅의 규칙
+
+- 리액트에서 제공하는 훅의 규칙
+  - 최상위에서만 훅을 호출해야한다. 반복문이나, 조건문, 중첩된 함수 내에서 훅을 실행할 수 없다. 이 규칙을 따라야만 컴포넌트가 렌더링될 때마다 동일한 순서로 훅이 호출되는 것이 보장 된다
+  - 훅을 호출할 수 있는 것은 리액트 함수 컴포넌트, 사용자 정의 훅의 2가지 겨웅 뿐이다. JS 함수에서는 호출 불가능
+
+## 3.2 사용자 정의 훅과 고차 컴포넌트 중 무엇을 써야 할까?
+
+### 3.2.1 사용자 정의 훅
+
+- 서로 다른 컴포넌트 내부에서 같은 로직을 고융하기 위해 사용되는 훅
+- 사용자 정의 useFetch 를 사용하는 코드
+
+```tsx
+import { useEffect, useState } from "react";
+
+function useFetch<T>(
+  url: string,
+  { method, body }: { method: string; body?: XMLHttpRequestBodyInit }
+) {
+  // 응답 결과
+  const [result, setResult] = useState<T | undefined>();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [ok, setOk] = useState<boolean | undefined>();
+  const [status, setStatus] = useState<number | undefined>();
+
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    (async () => {
+      setIsLoading(true);
+
+      const response = await fetch(url, {
+        method,
+        body,
+        signal: abortController.signal,
+      });
+
+      setOk(response.ok);
+      setStatus(response.status);
+
+      if (response.ok) {
+        const apiResult = await response.json();
+        setResult(apiResult);
+      }
+
+      setIsLoading(false);
+    })();
+
+    return () => {
+      abortController.abort();
+    };
+  }, [url, method, body]);
+
+  return { ok, result, isLoading, status };
+}
+
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
+}
+
+export default function PrivateHook() {
+  // 사용자 지정 훅 사용
+  const { isLoading, result, status, ok } = useFetch<Todo[]>("https://주소", {
+    method: "GET",
+  });
+
+  useEffect(() => {
+    if (isLoading) {
+      console.log("fetchResult >>", status);
+    }
+  }, [status, isLoading]);
+
+  return (
+    <div>
+      {ok
+        ? (result || []).map(({ userId, title }, index) => (
+            <div key={index}>
+              <p>{userId}</p>
+              <p>{title}</p>
+            </div>
+          ))
+        : null}
+    </div>
+  );
+}
+```
+
+- useFetch 라는 사용자 정의 훅을 만들지 않았다면, 해당 API 호출이 필요한 모든 컴포넌트내에서 공통 관리가 불간으한 4개의 state 를 각각 사용해야 하는 문제가 발생
+- 위의 중복 코드를 useFetch 하나의 커스텀 훅으로 관리가 가능해 진다
+- 리액트의 warning 을 피하기 위해서는 use 를 붙이거나 대문자로 함수를 컴포넌트화 시켜야 한다
+
+### 3.2.2 고차 컴포넌트
+
+- 컴포넌트 자체의 로직을 재사용하기 위한 방법
+
+#### React.memo 란?
+
+- 부모 컴포넌트가 리렌더링되는 경우 자식 컴포넌트는 props 의 변화가 없어도 강제로 리렌더링이 발생하는데, 이는 성능상의 비효율이다
+- 이때, React.memo 를 사용하면 변경되지 않은 컴포넌트의 경우 memo 를 통해 기억하고 있는 컴포넌트 값을 반환하여 불필요한 리렌더링 작업을 생략할 수 있다
+- useMemo 를 사용하면 동일하게 사용이 가능하지만, 사용상의 혼선을 줄 수 있으므로 의도가 명확한 memo 를 사용하는 것이 좋다
+
+```jsx
+const MemorizedComponent = useMemo(() => {
+  return <ChildComponent value="hello" />;
+}, []);
+```
+
+#### 고차 함수 만들어 보기
+
+#### 고차 함수를 활용한 고차 컴포넌트 만들어보기
+
+- 로그인한 사용자에게만 개인화된 컴포넌트를 보여주는 HOC 패턴
+- 사용자 인증에 대한 처리를 HOC 패턴을 이용해 구현하고, 보여주고자 하는 컴포넌트를 withLoginComponent 의 인수로 전달만 하면 끝!
+- 인증은 사실 서버에서 처리하는 편이 좋다 -> HOC 패턴을 보여주기 위한 예시일 뿐
+
+```tsx
+import { ComponentType } from "react";
+
+interface LoginProps {
+  loginRequired?: boolean;
+}
+
+function withLoginComponent<T extends { value: string }>(
+  Component: ComponentType<T>
+) {
+  return function (props: T & LoginProps) {
+    const { loginRequired, ...restProps } = props;
+
+    if (loginRequired) {
+      return <div>로그인이 필요합니다.</div>;
+    }
+
+    return <Component {...(restProps as T)} />;
+  };
+}
+
+const Component = withLoginComponent((props: { value: string }) => {
+  return <h3>{props.value}</h3>;
+});
+
+export default function WithLoginComponent() {
+  const isLogin: boolean = true;
+
+  return <Component value="text" loginRequired={isLogin} />;
+}
+```
+
+- 단순히 값을 반환하거나 부수효과를 실행하는 사용자 정의 훅과 달리 HOC 패턴은 컴포넌트 전체를 감쌀 수 있기 때문에 더 큰 영향력을 행사한다
+- 고차 컴포넌트의 경우 접두사 with 를 쓰는 것이 국룰이다!
+- 부수효과를 최소화 하여야 한다 -> 인수로 받는 컴포넌트의 props 를 임의로 수정, 추가, 삭제하는 일은 없어야 한다
+- 고차 컴포넌트로 인해 props 가 변경 된다면, 다른 쪽에서는 언제 props 가 변화하는지 예측이 어려우므로 개발이 어려워진다
+- 고차 컴포넌트를 반복적으로 사용할 경우 복잡성이 증가하므로 주의하여 사용이 필요하다
+
+\*\* [p. 247] TS 3.0 이슈로 인한 문법 변경 필요, 확인할 것!
+
+- 리액트는 JS 로 구성된 언어이므로 TS 의 몇몇 동작이 정확하게 작동하지 않는 이슈 발생
+- 마져 확인 할 것!
+
+### 3.2.3 사용자 정의 훅과 고차 컴포넌트 중 무엇을 써야 할까?
+
+#### 사용자 정의 훅이 필요한 경우
+
+- 사용자 정의 훅은 결국 부수 효과만을 발생 시키고, 렌더링은 해당 훅을 사용하는 컴포넌트에서 결정이 되므로 렌더링에 영향을 못끼친다.
+- 따라서, 공통 로직을 격리하는 경우 또는 컴포넌트에 미치는 영향을 최소화 하고 훅을 개발자가 원하는 방향으로 사용하도록 강제하는 경우에 사용한다
+
+#### 고차 컴포넌트를 사용해야 하는 경우
+
+- 사용자 정의 훅으로는 렌더링 결과물에 까지 영향을 미치기는 어렵기 때문에 공통 로직에 따라 결과물(렌더링 결과)이 달라지는 경우라면 고차 컴포넌를 사용하는 편이 좋다

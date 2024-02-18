@@ -1,1 +1,53 @@
-## 이야기해보기 파일
+### useImperativeHandle
+
+부모에게 넘겨받은 ref를 수정할 수 있는 훅
+ref에 useImperativeHAndle훅으로 추가적인 동작을 정의한다.
+부모는 단순히 HTMLElement뿐만 아니라 **자식 컴포넌트에서 새롭게 설정한 객체의 키와 값에 대해서도 접근**할 수 있다.
+
+---
+
+> useImperativeHandle을 사용하면 상위 컴포넌트에서 하위 컴포넌트의 상태값을 변경하거나 제어하는 게 가능하고
+> 편리한 훅 아닌가 생각했는데
+> 대부분의 경우 ref를 사용한 명령형 코드는 피해야 한다고 공식문서에 적혀있다.
+> 해당 컴포넌트의 상태값을 외부에서 제어하는 것이 디버깅을 어렵게 만드는 요소로 사료된다.
+> ref 값과 state를 따로 들고 가는 것에서 데이터 정합성이 틀려지는 경우가 생기는 경우가 있을 수 있다고 한다.
+
+[참고 블로그](https://velog.io/@jay/useImperativeHandle-%EB%96%A0%EB%A8%B9%EC%97%AC%EB%93%9C%EB%A6%BD%EB%8B%88%EB%8B%A4)
+
+```javascript
+import React, {
+  forwardRef,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
+
+const Component = forwardRef((props: any, ref: ForwardedRef<unknown>) => {
+  const [exText, setExText] = useState("출력");
+  useImperativeHandle(
+    ref,
+    () => ({
+      alert: () => alert(props?.text),
+      pick: () => console.log(exText),
+    }),
+    [props?.text, exText]
+  );
+
+  return <div ref={ref} {...props} />;
+});
+
+export default function App() {
+  const inputRef = useRef();
+  function handleClick() {
+    inputRef?.current.alert();
+    inputRef?.current.pick();
+  }
+
+  return (
+    <div className="App">
+      <Component ref={inputRef} text={"paper"} />
+      <button onClick={handleClick}>button</button>
+    </div>
+  );
+}
+```

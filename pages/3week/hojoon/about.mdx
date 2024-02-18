@@ -1,1 +1,31 @@
 ## 이야기해보기 파일
+
+> useEffect에서 무한 루프를 피하기 위해서 useCallback감싸서 넣었던 코드가 있었는데 useEffect외부에 있던 관련 함수를 내부로 가져오면서
+> useCallback도 삭제할 수 있었고 내부에서 사용할 부수 효과라면 내부에서 만들어서 정의해서 사용하는 편이 훨씬 도움이 된다. 라는 것을 배웠다.
+
+## useEffect에서 비동기 함수 작성할 때
+
+- 비동기 함수가 useEffect 내부에 존재하게 되면 클린업 함수에서 이전 비동기 함수에 대한 처리를 추가하는 것이 좋다.
+
+```js
+let ignore = false;
+return () => {
+  ignore = true;
+};
+```
+
+> 그런데 매번 이러한 로직을 따로 작성해줘야고 하나의 컴포넌트에서 여러개의 버튼이 있고 모달과 같은 컴포넌트를 띄울 때 그리고 데이터는 서버에서 불러와야 할 때 이런식의
+> 로직은 전혀 도움이 되지 않는다.
+> 이러한 문제들을 해결하기 위해 나온것이 react-query, swr과 같은 data fetch 라이브러리라고 한다.
+
+## 공식문서에서 찾아본 다른 hooks
+
+- useInsertionEffect
+  > CSS-in-JS 전용 라이브러리를 위한 훅
+- useTransition
+  > useTransition은 UI를 차단하지 않고 state를 업데이트할 수 있는 React 훅입니다.
+- useId
+
+  > 고유한 id를 만들때 사용한다.(문자열)
+
+- useSyncExternalStore

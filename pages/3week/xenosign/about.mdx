@@ -1,1 +1,75 @@
 ## 이야기해보기 파일
+
+### 3.1.1 useState
+
+- [p. 194] SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED 변수명 잼나네요 ㅋㅋ
+- 게으른 초기화 이거 예전에 경은님이 질문 했었는데, 그땐 답변을 못드렸는데 이렇게 배웁니다 ㅎㅎㅎ
+
+### 3.1.2 useEffect
+
+```tsx
+// 수정버전
+function Component({ id }: { id: string }) {
+  const [info, setInfo] = useState<number | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    (async () => {
+      const result = await fetchInfo(id. {signal: controller.signal});
+      setInfo(await result.json());
+    })();
+
+    return () => controller.abort();
+  }, [id]);
+
+  return <div>{/* 렌더링 */}</div>;
+}
+```
+
+- 즉시 실행 함수(IIFE)에 활용에 대해서는 어찌 생각하시나요? 전역 변수 생성 억제 또는 은닉화에는 도움을 주지만 초기 코드 작성에 있어서 IIFE 를 많이 사용하면 가독성 및 코드 재사용성은 안좋다고 생각하는데요. 다들 어떻게 생각하시나요?
+- [p. 208] 왜 어떨 땐, JS 어떨 땐 TS 번갈아 쓰는 걸까요? ㅋㅋㅋㅋ
+
+### 3.1.6 useContext
+
+#### useContext 사용할 때 주의할 점
+
+- useContext 나 상태 관리 라이브러리를 쓰면서 렌더링 최적화를 기대하셨던 분 있나요? 저는 렌더링 이야기가 나오는지 조금 의아했습니다.
+
+### 3.1.7 useReducer
+
+- useContext, useReducer 섞어 쓰기 vs 상태 관리 라이브러리 사용하기
+- 어떤 상태관리 라이브러리를 주로 쓰시나요?
+
+### 3.1.8 useImperativeHandle
+
+#### forwardRef 살펴보기
+
+```jsx
+import { forwardRef, useEffect, useRef } from "react";
+
+const ChildComponent = forwardRef((props, ref) => {
+  useEffect(() => {
+    console.log(ref);
+  }, [ref]);
+
+  return <div>안녕!</div>;
+});
+
+export default function ForwardRef() {
+  const inputRef = useRef();
+
+  return (
+    <div>
+      <input ref={inputRef} />
+      <ChildComponent ref={inputRef} />
+    </div>
+  );
+}
+```
+
+- [p. 231] 이걸 굳이?????????? 저는 왜 쓰는지 잘 모르겠습니다. ref 가 useRef 를 가르키는 일관성을 지키기 위함이라고 하는데 코드르 자세히 보는 것이 아니라면 이게 props 인지 useRef 참조인지 헷갈릴 것 같습니다.
+
+#### useImperativeHandle 이란?
+
+- 그런데 props 는 단방향 작동 원칙을 지켜야 하므로 전달받은 컴포넌트에서는 가급적 수정을 하지 말아야 하는데, 이런 부분은 서로 상충되지 않을까요? 사실 부모 컴포넌트에서 원하는 부분을 다 붙여서 보내주는 것이 맞다고 생각을 하는데 useImperativdHandle 을 사용해야하는 상황은 어떤 상황이 있을까요?

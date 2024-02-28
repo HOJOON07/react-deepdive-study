@@ -1,1 +1,123 @@
-## 정리하기 파일
+## 04. 서버 사이드 렌더링
+
+### SPA vs SSR
+
+- 싱글 페이지 애플리케이션
+
+  - 최초의 첫 페이지에서 데이터를 모두 불러옴
+  - 이후의 페이지 전환을 위한 모든 작업이 자바스크립트와 브라우저 history.pushState와 history.replaceState로 이루어짐
+  - 사이트 렌더링에 필요한 `<body />` 내부의 내용을 모두 자바스크립트 코드로 삽입한 이후에 렌더링
+  - 이러한 작동 방식은 최초에 로딩해야 할 js 리소스가 커지는 단점이 있지만 한번 로딩된 이후에는 서버를 거쳐 리소스를 받아올 일이 적어지기 때문에 사용자에게 훌륭한 UIUX를 제공
+
+- 서버 사이드 렌더링 방식
+  - 렌더링에 필요한 작업을 서버에서 수행
+  - 사용자 기기의 성능 영향을 받는 클라이언트 렌더링에 비해서, 렌더링을 서버에서 수행하기 때문에 비교적 안정적
+  - FCP(First Contentful Paint)가 더 빨라지는 것이 장점
+  - 검색 엔진과 SNS 공유 등 메타데이터 제공 용이
+  - CLS 누적 레이아웃 이동을 줄일 수 있음
+  - 사용자의 디바이스 성능에 비교적 자유로움
+  - 보안에 좀 더 안전
+  - 서버에서 렌더링 작업이 끝나기까지는 정보 제공이 불가능, 때문에 더 안 좋은 사용자 경험을 제공할 수 있다는 위험 존재
+
+---
+
+### SSR을 위한 리액트 API
+
+리액트는 리액트 애플리케이션을 서버에서 렌더링할 수 있는 API를 제공한다. 이 API는 Node.js와 같은 서버 환경에서만 실행할 수 있다.
+
+---
+
+##### renderToString
+
+```javascript
+function App(){
+	return (
+      <>
+      	<div>Hello World</div>
+      </>
+    )
+}
+
+const result = ReactDOMServer.renderToString(
+	React.createElement('div', {id: 'root'}, <App />),
+)
+
+// result의 반환값
+<div id="root" data-reactroot=""> // data-reactroot는 hydrate 함수에서 루트를 식별하는 기준
+  <div>Hello World</div>
+</div>
+```
+
+- renderToString은 인수로 주어진 리액트 컴포넌트를 빠르게 브라우저가 렌더링할 수 있는 HTML을 제공하는 데 목적이 있다.
+- 완성된 HTML을 서버에서 서빙하기 때문에 초기 렌더링에서 뛰어난 성능을 보임
+- 검색 엔진이나 SNS 공유를 위한 메타 정보도 renderToString에서 미리 준비한 채로 제공
+
+##### renderToStaticMarkup
+
+- renderToString과 유의미한 차이점은 루트 요소에 추가한 data-reactroot와 같은 추가적인 DOM 속성을 만들지 않는다는 점
+- 때문에 HTML 크기를 아주 조금이라도 줄일 수 있다.
+
+##### renderToNodeStream
+
+- Node.js의 ReadableStream을 반환
+  - ReadableStream은 utf-8로 인코딩된 바이트 스트림, Node.js 환경에서만 사용 가능
+  - 스트림은 큰 데이터를 다룰 때 데이터를 청크로 분할해 조금씩 가져오는 방식을 의미
+  - 대부분의 리액트 서버 사이드 렌더링 프레임워크는 renderToString이 아닌 renderToNodeStream를 채택
+
+##### renderToStaticNodeStream
+
+- hydrate를 할 필요 없는 순수 HTML 결과물이 필요할 때 사용하는 메서드
+
+##### hydrate
+
+- hydrate 함수는 renderToString이나 renderToNodeStream으로 생성된 HTML 콘텐츠에 자바스크립트 핸들러나 이벤트를 붙이는 역할
+- 정적으로 생성된 HTML에 이벤트와 핸들러를 붙여 결과물을 만듦
+- render 함수와의 차이점은 hydrate는 기본적으로 이미 렌더링 된 HTML이 있다는 가정하에 작업을 수행하고 이 HTML을 기준으로 이벤트를 붙이는 작업만 실행
+
+---
+
+### Next.js
+
+- Next.js의 장점을 살리기 위해서 애플리케이션을 처음부터 서버에서 다시 불러와야 하는 드문 케이스 외에는 내부 페이지 이동시에
+  - `<a>` 대신 `<Link>`를 사용한다.
+  - window.location.push 대신 router.push를 사용한다.
+- next/link로 이동하는 경우는 SSR이 아닌 클라이언트 라우팅/렌더링 방식으로 작동하기 때문
+
+### 상태 관리는 왜 필요한가?
+
+React에서의 상태관리는 Context API를 떠올리기 쉬우나 Context API는 상태관리가 아니라 상태 주입을 도와주는 역할이다. 리액트의 상태 관리는 단방향으로 데이터 흐름을 변경하는 Flux 패턴의 리덕스를 시초로 발전되었다.
+
+---
+
+- 웹에서 상태로 분류될 수 있는 것
+
+  - UI : 다크/라이트 모드, 라디오 input, 알림창의 노출 여부
+  - URL : 브라우저에서 관리되고 있는 상태값
+  - 폼 : loading, submit, disabled, vaildation 등
+  - 서버에서 가져온 값 : API 요청 등
+
+- 전역 상태 관리 라이브러리로 해결 된 것
+  - prop 드릴링 문제를 해결
+  - Context API와는 다르게 렌더링을 막아주는 기능 존재
+
+---
+
+## 05. 리액트와 상태 관리 라이브러리
+
+### 상태 관리 라이브러리
+
+- Recoil
+
+  - Recoil의 상태값은 RecoilRoot로 생성된 Context의 스토어에 저장
+  - 상태값에 접근할 수 있는 함수로 상태값을 변경하고 접근할 수 있다
+  - 값의 변경이 발생하면 하위 컴포넌트에 전파
+
+- Jotai
+
+  - 작은 단위의 상태를 위로 전파할 수 있는 구조
+  - 리액트 Context의 문제점인 불필요한 리렌더링을 해결하는 구조
+  - 객체의 참조를 `WeakMap`에 보관해 해당 객체 자체가 변경되지 않는 한 별도의 키가 없이도 객체의 참조를 통해 값을 관리할 수 있다.
+
+- Zustand
+  - 하나의 스토어를 중앙 집중형으로 활용해 상태를 관리
+  - 보일러 플레이트 코드가 적다.

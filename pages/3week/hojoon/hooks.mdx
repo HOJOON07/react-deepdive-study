@@ -1,0 +1,17 @@
+## useState
+
+- 함수를 호출한 결과가 아니라 함수 자체를 전달하면 React는 초기화 중에만 함수를 호출한다.
+
+```js
+function TodoList() {
+  const [todos, seTodos] = useState(createInitialTodos());
+}
+
+function TodoList() {
+  const [todos, seTodos] = useState(createInitialTodos);
+}
+```
+
+## useEffect
+
+- Effect로 인해 브라우저가 화면을 그리는 것을 차단해야 하는 경우, useEffect를 useLayoutEffect로 바꾸세요. 브라우저 페인팅 전에 Effect를 실행하는 것이 중요한 경우에만

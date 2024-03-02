@@ -101,6 +101,12 @@ const ListPage = lazy(() => import("컴포넌트 주소"));
 </Suspense>
 ```
 
+### 지연 로딩의 단점
+
+> - 지연 로딩 기법을 적용하면 최초 페이지를 로드할 때 당장 필요 없는 모달과 관련된 코드가 번들에 포함되지 않아, 로드할 파일의 크기가 작아지고 초기 로딩 속도나 자바스크립트의 실행 타이밍이 빨라져서 화면이 더 발리 표시된다는 장점이 있다.
+> - 이 기법은 모달과 같은 컴포넌트를 사용할 때는 한계점이 있다. 모달을 띄울 때 네트워크를 통해 코드를 새로 로드해야 하며 로드가 완료되어야만 모달을 띄울 수 있기 때문이다.
+> - 이때는 사전로딩 기법을 이용할 수 있다. -> 사전 로딩 부분으로
+
 ### 텍스트를 압축
 
 - 다운로드 전에 서버에서 미리 압축할 수 있는데, 그러면 원래 사이즈보다 더 작은 사이즈로 다운로드 할 수 있어 웹 페이지를 더 빠르게 로드할 수 있다.
@@ -166,9 +172,81 @@ DOM, CSSOM : HTML, CSS 등 화면을 그리는데 필요한 리소스를 다운�
 - opacity
 
   > 이런 속성을 사용하면 해당 요소를 별도의 레이어로 분리하고 작업을 GPU에 위임하여 처리해서 레이아웃 단계와 페인트 단계를 건너뛸 수 있다. 이것을 하드웨어 가속이라고 한다.
+  > 요소를 별도의 레이어로 분리하여 GPU로 보내야 하는데, transform, opacity 속성이 이 역할을 한다.
 
 - 코드 찾기(Bargraph)
 
 > ScaleX안에 있는 width는 퍼센트 값, 1이하의 실수 값으로 바꿔주고 width가 0일때 막대의 너비가 0으로 줄어들 테고, width가 100이 되면 scaleX(1)이 되므로 width가 100%인 상태로 유지 될것이다.
 
-### 컴포넌트 사전 로딩하기
+## 컴포넌트 사전 로딩하기
+
+> 사용자가 필요한 시점 바로 그 직전에 코드를 준비하는 것.
+
+### 사전 로딩하는 시점
+
+- 사용자의 마우스가 버튼에 들어왔을 때
+
+  > 마우스가 버튼에 들어오고 클릭하기 까지 300~600 밀리초의 시간차가 있다. 그사이에 새로운 파일을 로드하는 것
+
+- 컴포넌트의 크기가 커서 1초 이상의 시간이 필요하다면?
+  > useEffect에 넣어서 import할수 있다.
+
+### 이미지 사전 로딩하기.
+
+- 이미지의 사이즈가 커서 제때 뜨지 않는다면??
+  > 이미지도 컴포넌트의 import처럼 자바스크립트로 이미지를 직접 로드하는 방법이 있다.(보통은 html,css에서 이미지를 사용하는 시점에 로드된다.)
+
+1. Image 사용
+
+```js
+const img = new Image();
+img.src = 주소;
+```
+
+2. useEffect
+
+```jsx
+useEffect(() => {
+  const img = new Image();
+  img.src = "주소";
+}, []);
+```
+
+## intersection observer api 사용하기
+
+- MDN 문서
+  - https://developer.mozilla.org/ko/docs/Web/API/IntersectionObserver/root
+- (코드로)
+- https://github.com/HOJOON07/performanceStudy/blob/master/Desktop/performance/lecture-3/src/components/Card.js
+
+## 적절한 이미지 포맷 사용하기
+
+### PNG
+
+> 무손실 압축 방식, 투명도를 의미하는 알파 채널을 지원하는 이미지 포맷
+
+### JPG
+
+> 손실 압축, 그만큼 이미지를 더 작은 사이즈로 줄일 수 있다.
+
+### webPack
+
+> 무손실, 손실 압축을 제공하는 최신 이미지 포맷, 효율이 매우 좋음
+
+- Squoosh를 사용하여 이미지 변환하기.
+  https://squoosh.app/
+
+- webp를 사용할 껀데 webp를 지원하지 않는 브라우저에서 문제가 될 수 있다.
+- picture 태그 사용
+- source는 srcset 속성을 사용한다.
+
+```
+      <picture>
+        <source
+          data-srcset={props.webp}
+          type="image/webp"
+          ref={imgRef}
+        ></source>
+        <img data-src={props.image} ref={imgRef} />
+      </picture>
+```

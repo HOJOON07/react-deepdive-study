@@ -518,7 +518,7 @@ it("영문과 숫자만 입력된다.", () => {
 ```
 
 - userEvent 사용시 발생하는 Warning 상황
-  ![warning 상황](act_warning.png)
+  ![warning 상황](./act_warning.png)
 
 - React 18 이상 버전에서 실제 문제 없이 작동하는 코드
 
@@ -535,7 +535,7 @@ it("영문과 숫자만 입력된다.", () => {
 ```
 
 - fireEvent 로 변경 후, 정상 작동하는 상황
-  ![정상 상황](no_warning.png)
+  ![정상 상황](./no_warning.png)
 
 - 아마도, Testing Library 의 경우 테스트 이외의 상황에서 컴포넌트의 변화가 발생하면 테스트 결과가 맞아도 위와 같은 Warining 을 발생하는 것을 확인 가능
 - userEvent 의 경우 fireEvent 의 input 이 여러번 발생하는 구조이므로, setText 가 계속 적으로 컴포넌트를 업데이트 하는 상황이 발생하여 생기는 에러로 추측

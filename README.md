@@ -1,2 +1,2 @@
 - 스터디 Docs
-  https://react-deepdive-study.vercel.app/
+  <a href="https://react-deepdive-study.vercel.app" target="_blank">링크</a>

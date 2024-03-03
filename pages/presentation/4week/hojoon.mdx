@@ -57,7 +57,10 @@ https://github.com/performance-lecture
   > 적절한 사이즈는 레티나 디스플레이에 대응하기 위해서 렌더 사이즈의 x2의 크기로 최적화하는 것이 좋다.
   >
   > - CDN을 쓰는 경우 보통 쿼리스트링으로 가로 세로 조절 가능
-  > -
+  > - 클라우디너리의 경우
+  ```
+  /image/w_400,h_500,c_fill,q_auto:best/~
+  ```
 
 ### 코드 분할
 
@@ -74,6 +77,30 @@ npx cra-bundle-analyzer
 > 이 패키지는 블로그 글 상세 페이지에서만 사용되는데 처음 진입하는 목록 페이지에서는 패키지를 굳이 다운로드 할 필요가 없음
 
 - Dynamic Import
+  > app.js 에서 컴포넌트들을 lazy함수로 동적 import해오고 route부분을 suspense로 감싸고 컴포넌트에 넣어주면 각 페이지 컴포넌트의 코드가 분할 된다.
+
+```jsx
+import React, { Suspense } from "react";
+import { Switch, Route } from "react-router-dom";
+import "./App.css";
+import ListPage from "./pages/ListPage/index";
+import ViewPage from "./pages/ViewPage/index";
+
+function App() {
+  return (
+    <div className="App">
+      <Suspense fallback={<div>...로딩중</div>}>
+        <Switch>
+          <Route path="/" component={ListPage} exact />
+          <Route path="/view/:id" component={ViewPage} exact />
+        </Switch>
+      </Suspense>
+    </div>
+  );
+}
+
+export default App;
+```
 
 ```js
 import("add").then((module) => {

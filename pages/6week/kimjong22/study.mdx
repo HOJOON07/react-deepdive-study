@@ -1,1 +1,199 @@
-## 정리하기 파일
+#### ESLint를 활용한 정적 코드 분석
+
+버그와 예기치못한 작동을 방지하기 위한 방법으로 가장 빠르게 시도해 볼 수 있는 방법은 정적 코드 분석이다. 이는 코드 자체만으로 코드 스멜을 찾아내 사전에 수정하는 것을 의미한다.
+
+---
+
+**ESLint는 어떻게 코드를 분석할까?**
+
+1. js 코드를 문자열로 읽는다.
+2. js 코드를 분석할 수 있는 파서인 espree로 코드를 구조화한다.
+3. 2번에서 구조화한 트리를 AST라고 하는데, 이를 기준으로 각종 규칙과 대조핳ㄴ다.
+4. 규칙과 대조해 위반한 코드를 알리거나 수정한다.
+
+> [AST explorer](https://astexplorer.net/)
+> 해당 사이트에서 espree나 다른 파서로 자바스크립트/타입스크립트 코드를 분석할 수 있다.
+
+```javascript
+function astExploer() {
+  console.log('Hello World')
+}
+
+// AST explorer에서 파서를 espree로 설정하고 분석한 결과
+{
+  "type": "Program",
+  "start": 179,
+  "end": 229,
+  "range": [
+    179,
+    229
+  ],
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 179,
+      "end": 229,
+      "range": [
+        179,
+        229
+      ],
+      "id": {
+        "type": "Identifier",
+        "start": 188,
+        "end": 198,
+        "range": [
+          188,
+          198
+        ],
+        "name": "astExploer"
+      },
+      "expression": false,
+      "generator": false,
+      "async": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 201,
+        "end": 229,
+        "range": [
+          201,
+          229
+        ],
+        "body": [
+          {
+            // ✅ 해당 코드의 표현식 전체를 나타낸다.
+            "type": "ExpressionStatement",
+            "start": 205,
+            "end": 227,
+            "range": [
+              205,
+              227
+            ],
+            // ✅ ExpressionStatement에 어떤 표현이 들어가 있는지 확인한다.
+            "expression": {
+              // 해당 표현이 어떤 타입인지 나타낸다.
+              "type": "CallExpression",
+              "start": 205,
+              "end": 227,
+              "range": [
+                205,
+                227
+              ],
+              // ✅ 생성자를 사용한 표현식에서 생성자의 이름을 나타낸다.
+              "callee": {
+                "type": "MemberExpression",
+                "start": 205,
+                "end": 216,
+                "range": [
+                  205,
+                  216
+                ],
+                "object": {
+                  "type": "Identifier",
+                  "start": 205,
+                  "end": 212,
+                  "range": [
+                    205,
+                    212
+                  ],
+                  "name": "console"
+                },
+                "property": {
+                  "type": "Identifier",
+                  "start": 213,
+                  "end": 216,
+                  "range": [
+                    213,
+                    216
+                  ],
+                  "name": "log"
+                },
+                "computed": false,
+                "optional": false
+              },
+              // ✅ 생성자를 표현한 표현식에서 생성자에 전달하는 인수를 나타낸다.
+              "arguments": [
+                {
+                  "type": "Literal",
+                  "start": 217,
+                  "end": 226,
+                  "range": [
+                    217,
+                    226
+                  ],
+                  "value": "Hello World",
+                  "raw": "'Hello World'"
+                }
+              ],
+              "optional": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "sourceType": "module"
+}
+```
+
+#### eslint-plugin과 eslint-config
+
+eslint-plugin은 언급했던 규칙을 모아놓은 패키지이다. 특정 프레임워크나 도메인과 관련된 규칙을 묶어서 제공하는 패키지이다. eslint-config는 이러한 eslint-plugin을 한데 묶어 한 세트로 제공하는 패키지이다.
+
+---
+
+**널리 사용되는 exlint-config의 종류**
+
+- eslint-config-airbnb
+- eslint-config-next
+  - 페이지나 컴포넌트에서 반환히는 ]SX 구문 및 `_app`, `_document`에서 작성돼 있는 HTML 코드 또한 정적 분석 대상으로 분류해 제공
+  - core web vitals 요소들을 분석하는 기능도 포함
+
+> console.log를 쓰면 console.error를 쓰라고 create 필드로 fix 해주는 ESLint 규칙을 만들 수도 있다.
+
+```javascript
+module.exports = {
+  create: function (context) {
+    return {
+      CallExpression(node) {
+        if (
+          node.callee.object.name === "console" &&
+          node.callee.property.name === "log"
+        ) {
+          context.report({
+            node,
+            message:
+              "console.log를 사용하지 마세요. 대신 console.error를 사용하세요.",
+            fix: function (fixer) {
+              return fixer.replaceText(node.callee.property, "error");
+            },
+          });
+        }
+      },
+    };
+  },
+};
+```
+
+규칙은 하나씩 만들어서 배포하는 것은 배포하는 것이 불가능하며, 묶음으로 eslint-plugin 형태로 배포하는 것만 가능하다.
+
+#### 리액트 테스트 라이브러리란?
+
+DOM testing Library를 기반으로 만들어진 테스팅 라이브러리이다. DOM testing Library는 jodom을 기반으로 하고 있다. jsdom이란 순수하게 자바스크립트로 작성된 라이브러리이로, Node.js같은 환경에서도 HTML이나 DOM을 사용할 수 있도록 해주는 라이브러리다. jsdom을 사용하면 자바스크립트 환경에서도 마치 HTML을이 있는 것처럼 DOM을 불러오고 조작할 수 있다.
+
+---
+
+- 유닛 테스트: 각각의 코드나 컴포넌트가 독립적으로 분리된 환경에서 의도된 대로 정확히 작동하는지 검증하는 테스트
+- 통합 테스트: 유닛 테스트를 통과한 컴포넌트가 묶여서 하나의 기능으로 정상적으로 작동하는지 확인하는 테스트
+- 엔드 투 엔드: E2E 테스트는 실제 사용자처럼 작동하는 로봇을 활용해 전체적인 기능을 확인하는 테스트
+
+리액트 컴포넌트에서 테스트하는 일반적인 시나리오는 특정한 HTML 요소가 있는지의 여부를 확인한다.
+
+- getBy...: 인수의 조건에 맞는 요소를 반환한다. 복수는 getAllBy를 사용
+- findBy...: getBy와 유사하지만 Promise를 반환한다. 비동기로 찾으며 기본적으로 1000ms의 타임아웃으로 설정되어 있다. 복수는 findAllBy를 사용
+- queryBy...: 인수의 조건에 맞는 요소를 반환하는 대신 찾지 못한다면 에러를 발생시키지 않고 null을 반환한다. 복수개를 찾았을 때는 에러를 발생시키고, 복수는 queryAllBy를 사용
+
+- beforeEach: 각 테스트(it)를 수행하기 전에 실행하는 함수이다.
+- userEvent.type: 사용자가 타이핑 하는 것을 흉내내는 메서드이다. userEvent는 fireEvent의 여러 이벤트를 순차적으로 실행해 좀 더 자세하게 사용자의 작동을 흉내낸다.
+- jest.spyOn: 특정 메서드를 오염시키지 않고 실행이 됐는지, 어떤 인수로 실행 됐는지 등 실행과 관련된 정보를 얻고 싶을 때 사용한다. `jest.spyOn(window, 'alert')`
+- mockImplementation: 해당 메서드에 대한 모킹 구현을 도와준다. Jest를 실행하는 Node.js 환경에서는 window.alert가 존재하지 않으므로 해당 메서드를 모의 함수로 구현하는데, 해당 역할을 한다.

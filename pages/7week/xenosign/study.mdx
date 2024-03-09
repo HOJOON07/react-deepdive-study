@@ -1,1 +1,638 @@
-## 정리하기 파일
+# 09. 모던 리액트 개발 도구로 개발 및 배포 환경 구축하기
+
+## 9.1 Next.js 로 리액트 개발 환경 구축하기
+
+### 9.1.1 crate-next-app 없이 하나씩 구축하기
+
+```bash
+npm i react react-dom next
+
+npm i @types/node @types/react @types/react-dom eslint eslint-config-next typescript --save-dev
+```
+
+### 9.1.2 tsconfig.json 작성하기
+
+- TS 설정은 tsconfig.json
+- JSON 최상단에 $schme 와 같은 키를 넣어서, schemaStore 로 부터 정보를 받아와 JSON 파일이 무엇을 의미하는지 어떤 키와 값이 있는지를 알려주는 도구. 해당 값을 설정하면 IDE 에서 자동 완성이 가능해 진다
+
+```json
+{
+  "$schema": "https://json.schemastore.org/tsconfig.json",
+  "compilerOptions": {
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "baseUrl": "src",
+    "paths": {
+      "#pages/*": ["pages/*"],
+      "#hooks/*": ["hooks/*"],
+      "#types/*": ["types/*"],
+      "#components/*": ["components/*"],
+      "#utils/*": ["utils/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
+}
+```
+
+#### compilerOptions
+
+- TS 를 JS 로 컴파일 할 때 사용하는 옵션
+- target : TS 가 변환하는 JS 의 버전, 문법이 지원하지 않는 폴리필 까지 지원은 X
+- lib : lib 컴파일 된 언어에서 사용할 라이브러리에 대한 정보. 위의 Config 에는 esnext, dom 등이 추가 되어 Promise, Map 같은 ES6 의 문법도 라이브러리를 통해 사용이 가능하다
+- allowJS : JS 파일도 같이 컴파일 할지 여부. js 와 ts 가 혼재된 경우 사용
+- skipLibCheck : d.ts 검사를 skip 할지 정하는 옵션
+  - d.ts : TS 에서 제공하는 타입에 대한 정보를 담고 있는 파일. TS + React 를 사용하면 JS 의 타입 만으로는 타입 매칭이 불가능 하므로 d.ts 에서 도움을 받아야 한다
+- strict : 엄격 모드 여부
+
+  - alwaysStrict : 모든 JS 파일에 use strict 추가
+  - strictNullChecks : 엄격한 null check 활성화 여부
+  - strictBindCallApply : 엄격한 인수 체크 활성화 여부 (인수가 2개인데 3개 넘겨줄 경우 JS 는 넘기지만, 해당 옵션이 켜지면 에러 발생)
+  - strictFunctionTypes : 함수 타입 엄격 체크 여부 (함수 타입 체크에 예외가 없는 검사 실행)
+  - strictPropertyInitializtion : 클래스 내부의 프로퍼티에 값 할 당시 타입 엄격 체크
+  - noImplicitAny : 타입 명시가 안된 변수에 자동으로 any 를 부여하는 기능 끄기
+  - noImplicitThis : this 를 추론할 수 없는 상황에서 자동으로 any 를 부여하는 기능 끄기
+  - noUnknownInCatchVariables : catch 구문에서 잡는 변수에 기본으로 any 를 할당하는데 4.0 버전 부터느느 unknown 을 할당하는 옵션. catch 구문에서 잡히는 것이 반드시 에러가 아닐 수 있으므로 에러는 if 문을 사용하여 가드하는 것이 바람직 하다
+
+  ```js
+  try {
+    throw 5;
+  } catch (e) {
+    if (e instanceof Error) console.log(e);
+  }
+  ```
+
+  - forceConsistentInFileName : 파일 이름의 대소문자 구분 강제 옵션
+  - noEmit : 컴파일 없이 타입 체크만 하는 옵션. next 에서는 swc 가 컴파일을 하므로 굳이 ts 를 js 로 컴파일 한 후 다시 swc 로 컴파일할 이유가 없으므로 사용한다
+  - esModuleInterop : CommonJS 방식으로 모낸 보듈을 ES 모듈(import) 로 가져올 수 있게 하는 옵션 (ES5, ES6 를 동시에 사용하는 프로젝트일 경우 사용)
+  - module : 모듈 시스템(CommonJS or Esnext) 설정. 즉, require 냐 import 냐
+  - moduleResolution : 모듈 해석 방식 설정.
+    - node : node_moudules 에서 기본으로 모듈 해석. 단, CommonJS 의 경우에만 사용 가능
+    - classic : tsconifg.json 에 설정 된 디렉터리를 기준으로 해석
+  - resolveJsonModule : JSON 파일 import 여부 설정 -> true 면 자동으로 allowJs 옵션이 켜진다
+    - \*\* [p.537] 왜? 생각해 보자
+    - JSON 자체가 JS 객체 문법이라 js 옵션이 켜져야 하는 것으로 보임. TS 만 받으면 일반 JSON 오류가 발생 가능
+  - isolatedMoudles : TS 컴파일러는 파일에 import, export 가 없으면 단순 스크립트 파일로 인식해 이러한(?) 파일이 생성 되지 않도록 막는다. 즉, 모듈과 연계가 안된 단독 파일 생성을 막기 위한 옵션
+    - \*\* [p.537] 왜 막지? 생각해 보자
+    - 모듈로서 존재하는 것에 대한 의미일듯. import 가 없으면 다른 모듈 참조를 안하니 무시, export 가 없으면 다른 파일에서 필요하지 않으니 무시
+  - jsx : .tsx 파일 내부의 jsx 를 어떤 방식으로 컴파일 할지 설정
+    - react : 기본값, React.createElement 로 변환
+    - react-jsx : 리액트 17에서 등장, react/jsx-runtime 을 사용하여 변환. React.creatElement 를 사용하지 않아서 import React from 'react' 가 필요 없다
+    - react-jsxdev : react-jsx 와 동일하나 디버깅 정보 추가
+    - preseve : 변환 하지 않고 유지. next 는 jsx 역시 swc 가 변환해주므로 이 옵션을 사용한다
+    - react-native : 리액트 네이티브에서 사용, 실제로 변환을 안한다
+  - incremental : TS 가 마지막 컴파일 정보를 .tsbuildinfo 파일로 만들어 디스크에 저장. 해당 컴파일 정보를 비교하여 컴파일 비용이 제일 적은 컴파일 옵션을 찾아서 사용이 가능해 진다
+  - baseUrl : 모듈을 찾을 때, 기준이 되는 디렉토리 설정
+  - paths : 상대 경로(../, ../../)가 중첩되어 가독성이 떨어지는 상황에서, 해당 옵션을 사용하면 경로에 별칭(alias)를 설정 할 수 있게 해주는 옵션. $, # 등을 사용하여 설정한다. 단, @ 는 angular, @types 와 같은 스코프 패키지와 충돌 가능성이 있으므로 피하는 것이 좋다
+  - include : TS 컴파일 대상에 포함 시킬 파일 목록, 위에서는 ts 파일과 next 에서 자동으로 생성하는 타입 파일인 next-env.d.ts 를 포함
+  - exclude : TS 컴파일 대상에 제외 시킬 파일 목록
+
+- 나머지 옵션들은 http://www.typescriptlang.org/tsconfig 에서 확인 가능
+
+### 9.1.3 next.config.js 작성하기
+
+- Next.js 설정을 위한 파일
+
+```js
+/** @type {import('next').NextConfig} */ const nextConfig = {
+  reactStrictMode: true,
+  poweredByHeader: false,
+  eslint: { ignoreDuringBuilds: true },
+};
+module.exports = nextConfig;
+```
+
+- reactStrictMode : 엄격 모드 활성화
+- poweredByHeader : 보안 취약점인 X-Powered-By 해더 삭제
+- eslint: { ignoreDuringBuilds: true } : 빌드 시에 ESLint 무시, Next.js 빌드에서 ESLint 를 수행하므로 효율 증대
+
+### 9.1.4 ESLint 와 Prettier 설정하기
+
+- ESLint 를 설치만 하면 코드에 있을 잠재적 문제만을 확인할 뿐, 코드 스타일링 정의는 안해주기 때문
+- 해당 과정에서는 @titicaca/eslint-config-triple 을 사용
+  - https://github.com/titicacadev/eslint-config-triple#eslint-config-triple
+
+```bash
+npm i -D @titicaca/eslint-config-triple
+```
+
+- eslint-config-next 와 eslint-config-triple 이 함께 작동하기 위해서는 아래와 같은 별도의 설정 필요
+
+```js
+const path = require("path");
+
+const createConfig = require("@titicaca/eslint-config-triple/create-config");
+
+const { extends: extendConfigs, overrides } = createConfig({
+  type: "frontend",
+  project: path.resolve(__dirname, "./tsconfig.json"),
+});
+
+module.exports = {
+  extends: [...extendConfigs, "next/core-web-vitals"],
+  overrides,
+};
+```
+
+- extends 에 next/core-web-vitals 를 추가하여 두 가지 설정을 전부 적용
+- 이 외에 .eslintignore, .pritterignore 에 .next 나 node_modules 를 추가하여 직접 짠 코드가 아닌 코드는 분석에서 제외
+
+### 9.1.5 스타일 설정하기
+
+- Next.js 에 styled-components 를 적용
+
+```bash
+npm i styeld-components
+```
+
+- swc 에 styled-components 를 사용하는 것을 알리기 위해 next.config.js 에 내용 추가 -> swc 가 더 빠르게 컴파일이 가능
+
+```js
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
+  poweredByHeader: false,
+  eslint: { ignoreDuringBuilds: true },
+  // styeld-components 내용 추가
+  styeldComponents: true,
+};
+
+module.exports = nextConfig;
+```
+
+- next 폴더의 pages/\_document.tsx Head 에 ServerStyleSheet 추가
+
+### 9.1.6 어플리케이션 코드 작성
+
+- Next 를 위한 명령어를 package.json 에 추가
+
+```json
+{
+  "scripts": {
+    "dev": "next dev",
+    "start": "next start",
+    "build": "next build",
+    "lint:es": "eslint '**/*.{js,ts,tsx}'",
+    "lint:es:fix": "npm run lint:es -- --fix",
+    "prettier": "prettier '**/*' --check",
+    "prettier:fix": "prettier '**/*' --write"
+  }
+}
+```
+
+### 9.1.7 정리
+
+- 이러한 세팅은 시간이 걸리므로 협업시에는 보일러 플레이트 프로젝트를 만들고, 깃허브에서 'Template repository' 옵션을 체크해서 사용하는 방법을 추천
+
+## 9.2 깃허브 100% 활용하기
+
+### 9.2.1 깃허브 액션으로 CI(Continuous Intergration) 환경 구축하기
+
+- CI : 소프트웨어 코드를 지속적으로 개선하면서 빌드하고 테스트해 코드의 정합성을 확인하는 과정
+- 기존에는 Jenkins 가 자주 사용 되었다
+  - 단, 설치형이고 서버를 구축해야하므로 설치 및 유지 보수 측면에서 번거로움이 발생
+- 최근에는 깃허브 액션을 사용
+  - 원래는 CI 툴이 아니지만 깃허브에서 발생하는 다양한 이벤트를 트리거 삼아 다양한 액션을 수행하는 기능
+
+#### 깃허브 액션의 기본 개념
+
+- 러너(runner) : 파일로 작성된 깃허브 액션이 실행되는 서버, 특별히 지정하지 않으면 깃허브 공용 서버를 사용하며 별도의 서버를 구축하여 사용이 가능하다
+- 액션 : yaml 파일로 구성 된 러너에서 실행되는 하나의 작업 단위
+- 이벤트 : 깃허브 액션의 트리거가 되는 이벤트
+  - pull_request
+  - issues
+  - push
+  - schedule : 이벤트와는 별개로 특정 시간에 작동
+  - step : 직렬로 실행되는 작은 작업 단위
+  - job : step 의 집합
+
+#### 깃허브 액션 작성하기
+
+- 액션을 작성하려면 저장소의 루트 폴더에 .github/workflows 폴더를 생성하고 내무에 yaml 파일 작성을 하면 된다
+
+```yaml
+name: chapter7 build
+run-name: ${{ github. actor }} has been added new commit.
+
+on:
+  push:
+    branches-ignore:
+      - "main"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: "install dependencies"
+        working-directory: ./chapter7/my-app
+        run: npm ci
+      - name: "build"
+        working-directory: ./chapter7/my-app
+        run: npm run build
+```
+
+- name : 액션의 이름, 필수는 아니지만 액션 구분을 위해서 지정을 추천
+- run-name : 액션 실행 시 구별할 수 있는 타이틀 명. github.actor 를 통해 어떤 사람이 액션을 트리거 했는지 구별하는 정도로 사용
+- on : 필수 값, 앤션을 언제 실행할지 정의
+  - 위의 예시 코드에서는 main 을 제외한 브랜치에 푸쉬가 발생 했을 때, 실행되도록 설정 되어 있음. main 은 PR 을 통과한 내용만 반영 되므로 무시
+- jobs : 필수 값, 해당 액션 발생 시 수행할 잡을 의미. 여러개 지정이 가능하며 병렬로 실행
+  - jobs.build : 예약어가 아닌 일종의 이름
+  - jobs.build.runs-on : 어느 환경에서 작업을 실행할지 결정
+    - 깃허브 서버에서 하고 싶지 않은 경우 ubuntu-latest 를 성언하거나, 커스텀 러너 사용 가능
+- jobs.build.steps : 잡에서 순차적으로 실행할 작업 정의
+  - uses
+    - actions/checkout@v3 : 깃허브에서 제공하는 기본 액션으로 해당 브렌치의 마지막 커밋을 기준으로 체크아웃
+    - actions/setup-node@v3 : 깃허브에서 제공하는 기본 액션으로 러너에 지정한 Node 를 설치하여 실행. 프로젝트가 배포되는 Node 버전에 맞춰서 작성하면 된다
+  - name: "install dependencies"
+    - 프로젝트에 필요한 의존성 모듈 설치
+    - npm ci 를 활용하여 package-lock.json 을 기반으로 node_modules 폴더를 삭제 후, 다시 의존성 모듈을 그대로 설치한다
+    - 의존성 모듈만 설치할 뿐, npm i 처럼 특정 파일의 쓰기를 발생시키지 않으므로 ci 에 적합한 명령어
+  - name: "build"
+    - 모든 세팅이 끝났으므로 빌드!
+
+##### 액션 작성
+
+##### 브랜치 보호 규칙
+
+- Merge 전 반드시 수행해야할 액션이 있다면, 브랜치 보호 규칙을 추가하여 액션을 강제할 수 있다
+
+### 9.2.2 직접 작성하지 않고 유용한 액션과 깃허브 액 가져다 쓰기
+
+#### 깃허브에서 제공하는 기본 액션
+
+- actions/checkout : 깃허브 저장소를 체크아웃 하는 액션
+- actions/setup-node : nodejs 를 설치하는 액션
+- actions/github-script : 깃허브 API 가 제공하는 기능을 사용할 수 있도록 도와주는 액션
+- actions/stale : 오래된 이슈나 PR 을 닫거나 더이상 커뮤니케이션 못하도록 닫는 기능. 과거 이슈나 PR 정리용
+- actions/dependency-review-action : 의존성 그래프에 대한 변경 package.json / package-lock.json 같은 의존성 파일 변경시 실행되는 액션
+- actions/codeql-action : 깃허브 코드 분석 솔루션이 code-ql 을 활용해 코드 취약점 분석을 해주는 액션
+
+#### calibeapp/image-actions
+
+- 이미지 최적화를 위한 액션
+
+```yaml
+name: Optimize images
+on: pull_request
+
+jobs:
+  build:
+    name: calibreapp/image-actions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Compress Images
+        uses: calibreapp/image-actions@main
+        with:
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          ignorePaths: "LCPSample.jpeg"
+```
+
+- PR 이 수행되면 이미지를 압축하여 다시 커밋하고 해당 내용을 PR 한다
+
+#### lirantal/is-website-vulnerable
+
+- Snyk 라는 솔루션을 기반으로 작동하는 특정 사이트의 라이브러리 취약점이 존재하는지 확인하는 깃허브 액션
+
+```yaml
+name: Test site for publicly known js vulnerabilities
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test for public javascript library vulnerabilities
+        uses: lirantal/is-website-vulnerable@master
+        with:
+          scan-url: "https://yceffort.kr"
+```
+
+- 특정 취약점이 발견되면 액션이 실패 된다
+- 다만 main 에 PR이 발생할 때마다 취약점을 분석하면 배포가 끝나기 전에 액션이 실패하여 문제가 발생할 수 있으므로 별도의 액션을 추가하여 배포 후 실행하는 방법이 좋다
+
+```yaml
+on:
+  workflow_run:
+  # 해당 워크 플로우는 deploy 가 완료된 이후에 실행된다
+  workflows: [deploy]
+  types:
+    - completed
+```
+
+#### Lighthouse CI
+
+- 라이트하우스 CI 를 기반으로 프로젝트 URL 을 방문하여 라이트 하우스 검사를 실행하는 액션 API
+- Lighthouse CI 홈페이지를 방문해서 Configure 를 눌러서, 저장소의 권한을 얻고 사용이 가능하다
+
+```yaml
+name: Lighthouse CI
+on: [push]
+
+jobs:
+  lhci:
+    name: Lighthouse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: pnpm/action-setup@v2.2.2
+        with:
+          version: 7
+      - name: Use Node.js 16.x
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16.x
+      - name: install & build
+        run: |
+          npm install
+          npm build
+      - name: run Lighthouse CI
+        run: |
+          npm install -g @lhci/cli@0.8.x
+          lhci autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+```
+
+- 루트에 생성하는 .lighthouse.js 파일
+- npm run start 로 실행 된, next 앱을 http://localhost:3000 에 들어가서 분석한다
+
+```js
+module.exports = {
+  ci: {
+    collect: { url: ["http://localhost:3000"], collect: { numberOfRuns: 5 } },
+    upload: {
+      startServerCommand: "npm run start",
+      target: "temporary-public-storage",
+    },
+  },
+};
+```
+
+\*\* [p. 566] 깃허브 액션 관련 레포 따로 파서 테스트 해볼 것
+
+- 역시나 에러 발생 중, 확인 필요
+
+### 9.2.3 깃허브 Dpendabot 으로 취약점 해결하기
+
+- 깃허브 Dpendabot : 의존성 문제가 있을 경우 알려주고 해결할 수 있는 PR 까지 열어주는 툴
+
+#### package.json 의 dependencies 이해하기
+
+##### 버전
+
+- 버전의 경우 유의적 버전을 의미하며, 버전은 주.부.수로 구성되어 있다
+
+  - 주 : 기존 버전과 호환되지 않게 API 가 변경된 경우
+  - 부 : 기존 버전과 호환되면서 기능이 추가된 경우
+  - 수 : 기존 버전과 호환되면서 버그를 수정한 것
+
+- 버전 방식
+
+  - 특수 기호 없음 : 정확히 해당 버전에 의존
+  - ^ : 명시된 버전의 모든 부 버전에 호환 (^16.0.0 이면 16 ~ 16.9 버전 까지 호환)
+  - ~ : 명시된 버전의 모든 수 버전에 호환 (~16.0.0 이면 16.0 ~ 16.1 버전 까지 호환)
+
+##### 의존성
+
+- dependencies : 프로젝트 실행에 반드시 필요한 패키지
+- devDependencies : 개발 단계에서 필요한 패키지
+- peerDependencies : 호환성으로 이하여 필요한 패키지
+
+#### Dependabot 으로 취약점 해결하기
+
+- 의존성의 문제가 있는 프로젝트를 Push 할 경우 원격 저장소의 Dependabot 이 저장소의 의존성에 여러 문제가 있다고 알려준다
+- 이미 의존성 문제가 해결 된 것은 Dependabot 이 PR 을 열어주며 이를 수행하면 문제가 해결 된다
+- 다만, 해당 해결이 절대로 완벽하다고 믿어서는 안된다
+
+## 9.3 리액트 어플리케이션 배포하기
+
+\*\* [p. 585] 어플리케이션 vs 애플리케이션? 당신의 선택은?
+
+### 9.3.1 Netlify
+
+#### create-react-app 으로 생성한 앱 배포하기
+
+- Netlify 에 가입
+- Import an existing project
+- 리액트 어플리케이션 레포지토리 불러오기
+- 배포 설정
+  - Branch ro deploy : 머지 발생시 자동 배포가 되는 타겟 브랜치 지정
+  - Base directory : 배포 명령어를 실행할 기본 디렉토리, 루트면 / 입력
+  - Build command : 빌드 명령어 (npm run build)
+  - Publish directory : 실제 서비스에 필요한 정적 리소스가 위치한 디렉토리 설정 (npm run build 로 빌드시 /build)
+- Deploy Site 로 배포 시작
+
+#### create-next-app 으로 생성한 앱 배포하기
+
+- Next 어플리케이션 루프 폴더에 netlify.toml 파일 생성
+
+```yaml
+[[plugins]]
+package = "@netlify/plugins-nextjs"
+```
+
+- 배포 설정
+  - Base directory : /
+  - Build command : npm run build
+  - Publish directory : /.next
+
+#### 추가 기능
+
+- 배포 관련 알림 기능 설정 가능
+- 도메인 연결 가능
+- 서비스 통합 가능
+- 서버리스 함수 사용 가능
+- 인증 API 사용 가능
+- 사용자 초대 가능
+
+### 9.3.2 Vercel
+
+#### create-react-app 으로 생성한 앱 배포하기
+
+- 프로젝트 생성
+- 깃허브 레포 불러오기
+- 루트 디렉토리 설정
+- Deploy 눌러서 배포
+
+#### create-next-app 으로 생성한 앱 배포하기
+
+- Framework Preset 에서 next.js 선택
+- 나머지는 동일하게 진행
+
+#### 추가 기능
+
+- 알림
+- 도메인 연결
+- 서버리스 함수
+- 다양한 템플릿 제공
+
+### 9.3.3 DigitalOcean
+
+#### create-react-app 으로 생성한 앱 배포하기
+
+#### create-next-app 으로 생성한 앱 배포하기
+
+- 적절하게 배포 할 것
+- 추가 기능도 비슷하다
+
+## 9.4 리액트 어플리케이션 도커라이즈 하기
+
+### 9.4.1 리액트 앱을 도커라이즈 하는 방법
+
+#### 도커란?
+
+- 어플리케이션을 컨테이너 단위로 패키징하고 이 컨테이너 내부에서 어플리케이션이 실행 될 수 있도록 도와주는 ㅓㅅ비스
+
+##### 도커 용어
+
+- 이미지 : 컨테이너를 만드는데 사용되는 템플릿
+- 컨테이너 : 도커의 이미지를 실행한 상태, 어플리케이션 실행을 위한 하나의 독립된 공간
+- Dockerfile : 이미지를 정의하는 파일, 해당 파일을 빌드하여 이미지를 만든다
+- 태그 : 이미지를 식별할 수 있는 레이블 값
+- 리포지토리 : 이미지를 모아두는 저장소
+- 레지스트리 : 리포지터리에 접근할 수 있는 서비스
+
+##### 자주 쓰는 토커 cli 명령어
+
+- docker build : DockerFile 을 기준으로 이미지를 빌드하는 작업, 일반적으로 -t 를 사용하여 태그를 부여하여 생성
+- docker push : 이미지나 리포지토리를 레지스트리에 업로드하는 과정
+- docker tag : 이미지에 태그를 생성하는 명령어
+- docker inspect : 이미지나 컨테이너의 세부 정보를 출력하는 명령어
+- docker run : 이미지를 기반으로 새로운 컨테이너를 생성하는 명령어
+- docker ps : 현재 가동 중인 컨테이너 목록을 확인하는 명령어
+- docker rm : 이미지명으로 컨테이너 삭제
+
+##### create-react-app 을 위한 Dockerfile 작성하기
+
+1. 운영체제 설정
+2. node.js 설치
+3. npm ci 로 의존 모듈 설치
+4. npm run build 프로젝트 빌드
+5. 실행
+
+- 위의 내용을 Dockerfile 로 만들면
+
+```bash
+FROM node:18.12.0-alpine3.16 as build
+# 베이스 이미지 설정, 노드 18.12 버전 & 알파인 리눅스 3.16 버전에서 이미지를 구성
+
+WORKDIR /app
+# 작업을 수행하고자 하는 기본 디렉토리
+
+COPY package.json ./package.json
+COPY package-lock.json ./package-lock.json
+# 파일 복사 명령어, 해당 파일을 ./ 위치 즉 WORKIDR 에서 설정한 /app 에 복사한다
+
+RUN npm ci
+# 의존성 모듈 설치
+
+COPY . ./
+# 의존성 모듈이 설치된 파일을 WORKIDR 에서 설정한 /app 에 복사한다
+
+RUN npm run build
+# 빌드를 통해 어플리케이션 빌드
+
+FROM nginx:1.23.2-alpine3.16 as start
+# NGINX 만 설치된 리눅스 환경에서 실행
+
+COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
+# 빌드한 파일을 NGINX 가 서비스할 수 있도록 설정 파일 복사
+
+COPY --from=build /app/build /usr/share/nginx/html
+# build 단계에서 필요한 리소스만 가져와서 start 단계에서 사용
+
+EXPOSE 3000
+# 컨테이너가 오픈할 포트
+
+ENTRYPOINT [ "nginx", "-g", "daemon off;" ]
+# 컨테이서 시작 시, 실행할 명령
+```
+
+\*\* [p.628] 또 안되네 ㅋㅋㅋㅋㅋ 이 사람 진짜 ㅋㅋㅋㅋㅋ
+
+##### create-next-app 을 위한 Dockerfile 작성하기
+
+```bash
+FROM node:18.12.0-alpine3.16 as deps
+
+WORKDIR /app
+
+COPY package.json ./package.json
+COPY package-lock.json ./package-lock.json
+
+RUN npm ci
+
+FROM node:18.12.0-alpine3.16 as build
+
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . ./
+
+RUN npm run build
+
+FROM node:18.12.0-alpine3.16 as runner
+
+COPY --from=build /app/public ./public
+COPY --from=build /app/.next/standalone ./
+COPY --from=build /app/.next/static ./.next/static
+
+EXPOSE 3000
+
+ENTRYPOINT ["node", "server.js"]
+```
+
+- next.config.js
+
+```js
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
+  swcMinify: true,
+  // 이 옵션을 추가
+  output: "standalone",
+};
+module.exports = nextConfig;
+```
+
+### 9.4.2 도커로 만든 이미지 배포하기
+
+#### 도커 이미지 업로드하기
+
+- 도커 이미지는 깃허브와 같은 Dockerhub 에 업로드가 가능하다
+- 이미지와 컨테이너를 생성하고 나면, Push to hub 를 사용하여 도커 허브로 배포가 가능
+
+#### 도커 이미지 실행하기
+
+- Google Cloud Platform(GCP) 을 이용하여 업로드 된 이미지 실행
+
+#### 사전 준비
+
+- GCP 에 가입
+- gcloud cli 설치
+- Google Cloud Registry 에 이미지 푸쉬
+- Cloud Run 에서 이미지 실행
+- CI 설정 가능
+
+\*\* [p. 654] 이렇게 지엽적인 부분만 알려 줄거면... 걍 Docker 설명하는게 더 좋지 않았을까? 간단하게 백엔드 굴리는 도커 만드는 법 알려준다던가...

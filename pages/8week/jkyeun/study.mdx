@@ -120,7 +120,7 @@ function selectTab(nextTab: Tab) {
 ### 그 밖에 알아두면 좋은 변경사항
 
 -   이제 컴포넌트에서 undefined를 반환해도 에러가 발생하지 않는다. undefined 반환은 null 반환과 동일하게 처리된다.
--   이와 마찬가지로 <Suspense fallback={undefined}>도 null과 동일하게 처리된다.
+-   이와 마찬가지로 `<Suspense fallback={undefined}>`도 null과 동일하게 처리된다.
 -   renderToNodeStream이 지원 중단됐다. 그 대신 renderToPipeableStream을 사용하는 것이 권장된다.
 
 # [11장] Next.js 13과 리액트 18

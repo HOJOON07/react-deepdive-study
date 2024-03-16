@@ -13,12 +13,7 @@
   !https://ko.legacy.reactjs.org/static/bb4b10114882a50090b8ff61b3c4d0fd/31868/react_17_delegation.png
 - 각 이벤트는 해당 리액트 컴포넌트 트리 수준으로 격리되므로 이벤트 버블링으로 인한 혼선을 방지할 수 있다.
   - `stopPropagation`를 호출해도 같은 요소에 묶인 다른 이벤트 리스너들은 그대로 호출된다. 따라서 React 16에서 컴포넌트 루트가 아래처럼 나뉘었고, '특정 루트'에 대한 이벤트 전파를 막고 싶을지라도 모든 이벤트가 document에 등록되므로 불가능하다.
-  ```html
-  <div id="React-16-14">
-    <div id="React-16-8"></div>
-    <div></div>
-  </div>
-  ```
+    ![스크린샷 2024-03-16 오후 9.24.57.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/6dd09c7c-ed2b-43ce-9322-3dd2fe92dfac/d1b39fa6-3f60-4255-9c4c-fea088d1d69c/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA_2024-03-16_%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE_9.24.57.png)
 
 ### 3. import React from 'react'가 더이상 필요 없다.
 
@@ -138,22 +133,7 @@
 
 **layout.js**
 
-```tsx
-export default function DashboardLayout({
-  children, // will be a page or nested layout
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <section>
-      {/* Include shared UI here e.g. a header or sidebar */}
-      <nav></nav>
-
-      {children}
-    </section>
-  );
-}
-```
+![스크린샷 2024-03-16 오후 9.25.46.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/6dd09c7c-ed2b-43ce-9322-3dd2fe92dfac/ccfec969-f2d0-4271-ae2e-dab73485d824/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA_2024-03-16_%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE_9.25.46.png)
 
 \_app과 \_document를 대신해 공통 코드를 삽입할 수도 있게 되었다.
 
@@ -164,12 +144,7 @@ export default function DashboardLayout({
 
 **pages.js**
 
-```tsx
-// `app/page.tsx` is the UI for the `/` URL
-export default function Page() {
-  return <h1>Hello, Home page!</h1>;
-}
-```
+![스크린샷 2024-03-16 오후 9.25.51.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/6dd09c7c-ed2b-43ce-9322-3dd2fe92dfac/ce8d7ca7-7d3e-4c28-a1e3-297e126159de/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA_2024-03-16_%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE_9.25.51.png)
 
 page도 예약어이며, 다음과 같은 props를 받는다.
 
@@ -185,24 +160,7 @@ page도 예약어이며, 다음과 같은 props를 받는다.
 
 **error.js**
 
-```tsx
-"use client";
-
-export default function Error({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
-  return (
-    <div>
-      <h2>Something went wrong!</h2>
-      <button onClick={() => reset()}>Try again</button>
-    </div>
-  );
-}
-```
+![스크린샷 2024-03-16 오후 9.25.55.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/6dd09c7c-ed2b-43ce-9322-3dd2fe92dfac/9acf353a-b13d-4926-a0bb-20fef8ea5328/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA_2024-03-16_%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE_9.25.55.png)
 
 에러 바운더리는 클라이언트에서만 작동하므로 클라리언트 컴포넌트여야한다.
 
@@ -216,17 +174,7 @@ export default function Error({
 
 - **자바스크립트 번들 크기가 0인 컴포넌트를 만들 수 없다:** 게시판 등 사용자가 작성한 HTML에 위험한 태그를 제거하기 위해 사용되는 유명한 sanitize-html라이브러리를 사용한다고 가정하자
   만약 저 라이브러리를 렌더링한 결과만 클라이언트에 제공하게 된다면 라이브러리를 다운로드 해도 되지 않아도 된다.
-  ```tsx
-  import sanitizeHtml from "sanitize-html"; // 206k (63.3K gzipped)
-
-      function Board({ text }: { text: string }) {
-        const html = useMemo(() => sanitizeHtml(text), [text]);
-
-        return <div dangerouslySetInnerHtml={{ __html: html }} />;
-      }
-
-      ```
-
+  ![스크린샷 2024-03-16 오후 9.26.00.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/6dd09c7c-ed2b-43ce-9322-3dd2fe92dfac/c50bed7b-cf4a-4cdc-b2ca-9cf262c229d7/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA_2024-03-16_%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE_9.26.00.png)
 - **백엔드 리소스에 대한 직접적인 접근이 불가능하다:** 클라이언트에서 백엔드 데이터에 접근하려면 REST API와 같은 방법이 일반적이다. 이는 항상 백엔드에서 데이터를 제공해줘야 한다. 그러나 직접 가져올 수 있다면 수고로움이 줄어들 것이다. (Q. 프론트에서 DB에 직접 접근하는 것이 맞을까?)
   성능 관점에서 볼 때 단계가 하나 줄어든 셈이므로 이점을 가지고 있다.
 - **자동 코드 분할이 불가능하다:** 개발자는 항상 코드 분할을 해도 되는 컴포넌트인지를 유념하고 개발해야 하기 때문에 이를 누락하는 경우가 발생할 수 있고 if문 전까지 어떤 컴포넌트를 불러올지 결정할 수 없다.
@@ -240,30 +188,7 @@ export default function Error({
 
 클라이언트 컴포넌트는 서버 컴포넌트를 import 할 수 없다. 그 이유는 **서버 컴포넌트를 불러오게 된다면 서버 컴포넌트를 실행할 방법이 없기 때문**이다.
 
-```tsx
-import ServerComponent form './ServerComponent.server'
-// x 클라이언트 컴포넌트에서 서버 컴포넌트를 불러오는 것은 불가능
-export default function ClientComponent() {
-	return (
-		<div>
-			<ServerComponent />
-		</div>
-	)
-}
-
-// 이 컴포넌트는 서버이거나 클라이언트 일 수도 있다.
-import ClientComponent from './ClientComponent'
-import ServerComponent form './ServerComponent.server'
-
-export default function ParentServerComponent() {
-	return (
-		<ClientComponent>
-			<ServerComponent />
-		</ClientComponent>
-	)
-}
-
-```
+![스크린샷 2024-03-16 오후 9.26.05.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/6dd09c7c-ed2b-43ce-9322-3dd2fe92dfac/1566486b-c178-48ec-9d58-044f34dd2cbc/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA_2024-03-16_%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE_9.26.05.png)
 
 각 컴포넌트의 차이와 제약사항은 다음과 같다.
 
@@ -292,22 +217,7 @@ export default function ParentServerComponent() {
 
 https://github.com/reactjs/server-components-demo/blob/29ec74365084e1921c6bf49c03266788099449a3/server/api.server.js#L74-L87
 
-```tsx
-app.get(
-  "/",
-  handleErrors(async function (_req, res) {
-    await waitForWebpack();
-    const html = readFileSync(
-      path.resolve(__dirname, "../build/index.html"),
-      "utf8"
-    );
-    // Note: this is sending an empty HTML shell, like a client-side-only app.
-    // However, the intended solution (which isn't built out yet) is to read
-    // from the Server endpoint and turn its response into an HTML stream.
-    res.send(html);
-  })
-);
-```
+![스크린샷 2024-03-16 오후 9.26.10.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/6dd09c7c-ed2b-43ce-9322-3dd2fe92dfac/eba4dca6-8820-4647-8c7f-951d704f9a9f/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA_2024-03-16_%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE_9.26.10.png)
 
 1. 서버가 렌더링 요청을 받는다. 서버가 렌더링 과정을 수행해야 하므로 서버에서 시작된다.
 2. 서버에서 받은 요청에 따라 컴포넌트를 JSON으로 직렬화 한다. 이때 서버에서 렌더링할 수 있는 것은 직렬화해서 내보내고, 클라이언트로 표시된 부분은 해당 공간을 플레이스홀더 형식으로 비워두고 나타낸다. 브라우저는 이를 역질렬화해서 렌더링을 수행한다.
@@ -325,28 +235,7 @@ getServerSideProps, getStaticProps, getInitialProps 는 fetch 기반으로 요�
 
 정적인 라우팅에 대해서는 기본적으로 빌드 임에 렌더링을 미리 해두고 캐싱해 재사용할 수 있게끔 해뒀고, 동적인 라우팅에 대해서는 서버에 매번 요청이 올 때마다 컴포넌트를 렌더링하도록 변경했다.
 
-```tsx
-async function getData() {
-  const res = await fetch("<https://api.example.com/>...", {
-    cache: "no-cache",
-  });
-  // The return value is *not* serialized
-  // You can return Date, Map, Set, etc.
-
-  if (!res.ok) {
-    // This will activate the closest `error.js` Error Boundary
-    throw new Error("Failed to fetch data");
-  }
-
-  return res.json();
-}
-
-export default async function Page() {
-  const data = await getData();
-
-  return <main></main>;
-}
-```
+![스크린샷 2024-03-16 오후 9.26.14.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/6dd09c7c-ed2b-43ce-9322-3dd2fe92dfac/926891bb-365b-4ea9-84a5-1d5401d0a020/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA_2024-03-16_%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE_9.26.14.png)
 
 동적인 렌더링을 원할 경우 `{ cache: 'no-cache' }` 옵션을 추가해서 요청이 올때 마다 렌더링을 수행하게 하면되고, 정적일 경우엔 제거하면 된다.
 
@@ -354,23 +243,7 @@ export default async function Page() {
 
 https://nextjs.org/docs/app/api-reference/functions/generate-static-params
 
-```tsx
-// Return a list of `params` to populate the [slug] dynamic segment
-export async function generateStaticParams() {
-  const posts = await fetch("https://.../posts").then((res) => res.json());
-
-  return posts.map((post) => ({
-    slug: post.slug,
-  }));
-}
-
-// Multiple versions of this page will be statically generated
-// using the `params` returned by `generateStaticParams`
-export default function Page({ params }) {
-  const { slug } = params;
-  // ...
-}
-```
+![스크린샷 2024-03-16 오후 9.26.19.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/6dd09c7c-ed2b-43ce-9322-3dd2fe92dfac/37837c1e-a276-4d96-b289-0702d84bd24e/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA_2024-03-16_%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE_9.26.19.png)
 
 ### 캐시와 mutating, 그리고 revalidating
 
@@ -392,24 +265,7 @@ If you would like to redirect the user to a different route after the completion
 
 app/actions.ts
 
-```tsx
-"use server";
-
-import { redirect } from "next/navigation";
-import { revalidateTag } from "next/cache";
-
-export async function createPost(id: string) {
-  try {
-    // ...
-  } catch (error) {
-    // ...
-  }
-
-  // revalidatePath 해당 주소의 캐시를 즉시 업데이트
-  revalidateTag("posts"); // Update cached posts 추가해둔 태그의 요청을 모두 초기
-  redirect(`/post/${id}`); // 특정 주소로 리다이렉트
-}
-```
+![스크린샷 2024-03-16 오후 9.26.24.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/6dd09c7c-ed2b-43ce-9322-3dd2fe92dfac/99636056-717f-465e-b9ad-5e7f625a1560/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA_2024-03-16_%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE_9.26.24.png)
 
 ### 서버 액션 사용 시 주의할 점
 
@@ -420,38 +276,7 @@ export async function createPost(id: string) {
 
 ### getStaticProps와 비슷한 정적인 페이지 렌더링 구현해보기
 
-```tsx
-export async function fetchPostById(
-  id: number | string,
-  options?: RequestInit
-): Promise<Post> {
-  const response = await fetch(
-    `https://jsonplaceholder.typicode.com/posts/${id}`,
-    options
-  );
-  const result: Post = await response.json();
-
-  return result;
-}
-
-// <https://github.com/wikibook/react-deep-dive-example/blob/main/chapter11/next13/app/ssg/%5Bid%5D/page.tsx>
-import { fetchPostById } from "#services/server";
-
-export async function generateStaticParams() {
-  return [{ id: "1" }, { id: "2" }, { id: "3" }, { id: "4" }];
-}
-
-export default async function Page({ params }: { params: { id: string } }) {
-  const data = await fetchPostById(params.id);
-
-  return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-medium text-gray-100">{data.title}</h1>
-      <p className="font-medium text-gray-400">{data.body}</p>
-    </div>
-  );
-}
-```
+![스크린샷 2024-03-16 오후 9.26.28.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/6dd09c7c-ed2b-43ce-9322-3dd2fe92dfac/3a3709d9-414d-448f-953b-a01a17bceeaf/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA_2024-03-16_%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE_9.26.28.png)
 
 `generateStaticParams`를 통해 [id]로 사용할 값을 객체 배열로 모아두고 별다른 옵션 없이 fetch하게 되면 **미리 모든 html이 빌드 타임에 생성된다.**
 

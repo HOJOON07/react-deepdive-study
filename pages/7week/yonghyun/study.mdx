@@ -38,20 +38,7 @@
 
 ### Dockerfile 작성하기
 
-```tsx
-FROM node: 18.12.0-alpine3.16 as build
-
-WORKDIR /app
-
-COPY package.json ./package.json
-COPY package-lock.json ./package-lock.json
-
-RUN npm ci
-
-COPY . ./
-
-RUN npm run build
-```
+![스크린샷 2024-03-16 오후 9.22.43.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/6dd09c7c-ed2b-43ce-9322-3dd2fe92dfac/8393a257-0247-4a55-88fe-61dc918317c3/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA_2024-03-16_%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE_9.22.43.png)
 
 - FROM node: 18.12.0-alpine3.16 as build
   - 이 이미지가 어떤 베이스 이미지에서 실행될지를 결정한다. 여기서 사용한 베이스 이미지는 `node: 18.12.0-alpine3.16` 이다. node: 18.12.0이란 Node.js 18.12.0 버전이 설치돼 있는 이미지를 의미하며 alpine3.16은 이 이미지가 alpine 3.16 버전의 운영체제 위에서 실행되는 이미지라는 것을 의미한다. as build란 이 베이스 이미지를 build라고 하는 단계(스테이지)에서만 쓰겠다는 것을 의미한다.
@@ -72,16 +59,7 @@ RUN npm run build
 2. 이미지를 실행했을 때 해당 웹페이지에 접근할 수 있어야 한다.
 3. 웹페이지 접근에 필요한 빌드 파일만 남겨두고 용량을 최소화한다.
 
-```tsx
-FROM nginx: 1.23.2-alpine as start
-
-COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
-COPY --from=build /app/build /usr/share/nginx/html
-
-EXPOSE 3000
-
-ENTRYPOINT ["nginx", "-g", "daemon off;"]
-```
+   ![스크린샷 2024-03-16 오후 9.23.38.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/6dd09c7c-ed2b-43ce-9322-3dd2fe92dfac/f9e4748a-e625-4605-bc13-657897913c86/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA_2024-03-16_%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE_9.23.38.png)
 
 - FROM nginx: 1.23.2-alpine as start
   - 빌드된 정적 파일을 서비스하기 위해 최신 버전의 NGINX가 설치된 알파인 리눅스를 설치했다.

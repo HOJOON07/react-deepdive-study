@@ -1,1 +1,46 @@
-## 이야기해보기 파일
+1. Lighthouse CI도 가능하다는게 신기했습니다.
+2. Docker 써보면 정말 편리해서 좋다.
+
+3. 게으른 초기화
+
+```jsx
+ const [applyValues, setApplyValues] = useState<Partial<ApplyValues>>({
+    userId: user?.uid,
+    cardId: id,
+    step: 0,
+  });
+
+  useEffect(() => {
+    if (applyValues.step === 3) {
+      localStorage.removeItem(storageKey);
+      onSubmit({
+        ...applyValues,
+        appliedAt: new Date(),
+        status: APPLY_STAUTS.READY,
+      } as ApplyValues);
+    } else {
+      // console.log(applyValues);
+      localStorage.setItem(storageKey, JSON.stringify(applyValues));
+    }
+  }, [applyValues, onSubmit, storageKey]);
+```
+
+```js
+const [applyValues, setApplyValues] =
+  useState <
+  Partial <
+  ApplyValues >>
+    (() => {
+      const applied = localStorage.getItem(storageKey);
+      if (applied == null) {
+        return {
+          userId: user?.uid,
+          cardId: id,
+          step: 0,
+        };
+      }
+      return JSON.parse(applied);
+    });
+```
+
+- prprprprp

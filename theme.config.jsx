@@ -2,7 +2,7 @@ import { useRouter } from "next/router";
 export default {
   logo: <strong>Modern React DeepDive Book Study</strong>,
   project: {
-    link: "https://github.com/shuding/nextra",
+    link: "https://github.com/HOJOON07/react-deepdive-study",
   },
   sidebar: {
     // 시이드바 설정 config

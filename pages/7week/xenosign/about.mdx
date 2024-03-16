@@ -1,1 +1,54 @@
-## 이야기해보기 파일
+### 9.1.2 tsconfig.json 작성하기
+
+- [p. 537] resolveJsonModule 옵션이 true 이면 자동으로 allowJS 가 켜진다고 하는데 왜 그럴까요?
+- [p. 537] isolatedModules 옵션이 켜지면 import, export 가 없는 파일은 생성하지 않는다고 하는데 왜 그럴까요?
+
+### 9.2.2 직접 작성하지 않고 유용한 액션과 깃허브 액션 가져다 쓰기
+
+- [p. 566] LH 액션에서 에러 발생
+
+### LH 관련 삽질 정리
+
+- 일단 버전 전부 변경(uses v3 로 변경, node 18 버전으로 업)
+- configuration 코드 필요 없음
+
+- ci.yaml 변경 사항
+
+```yaml
+name: CI
+on: [push]
+jobs:
+  lighthouseci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - run: npm install && npm install -g @lhci/cli@0.13.x
+      - run: npm run build
+      - run: lhci autorun --collect.url=http://localhost:3000
+```
+
+- autorun 으로 실행시 에러남, --collect.url 사용 필요
+  - 참고 : https://github.com/GoogleChrome/lighthouse-ci/issues/141
+- 다만 로컬에서 테스트한 경우 정상 실행 -> LH 결과 파일 생성
+- CI 로 하는 경우에는 아래 에러 발생
+
+```bash
+Runtime error encountered: Chrome prevented page load with an interstitial. Make sure you are testing the correct URL and that the server is properly responding to all requests.
+Error: Process completed with exit code 1.
+```
+
+- 깃허브 서버에서 별도의 url 생성이 안되어서 생기는 에러로 보이는데, 확인이 필요한 상황
+
+### 9.2.3 깃허브 Dependabot 으로 취약점 해결하기
+
+- [p. 585] 어플리케이션 vs 애플리케이션? 당신의 선택은?
+
+### 9.4.1 리액트 앱을 도커라이즈 하는 방법
+
+#### create-react-app 을 위한 Dockerfile 작성하기
+
+- [p.628] nginx 설정 파트가 빠져있어서 뭔가 싶었는데, 역시나 컨테이너 올리는게 안됩니다.
+- [p. 654] 이렇게 지엽적인 부분만 알려 줄거면... 걍 Docker 설명하는게 더 좋지 않았을까? 간단하게 백엔드 굴리는 도커 만드는 법 알려준다던가...

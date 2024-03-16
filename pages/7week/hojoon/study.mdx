@@ -1,1 +1,24 @@
-## 정리하기 파일
+## tsonfig.json
+
+- target : 언어의 버전, es5,es6
+- skipLibCheck : d.ts 검사 여부
+- stricNullChecks : unefined, null 의 가능성이 있는 모든코드에 대해 unefined, null을 반환한다.
+- noImPlicitThis : this를 추론할 수 없는 상황에서 any를 자동으로 할당하는 기능이 있다. 이 옵션을 켜두면 any를 할당하지 않고 에러가 발생한다.
+- baseUrl : 기준이 되는 디렉토리를 지정할 때 사용된다.
+- paths : 경로에 별칭을 지정할 수 있다.
+- include : 타입스크립트 컴파일 대상에서 포함시킬 파일 목록을 의미한다.
+- exclude : 타입스크립트 컴파일 대상에서 제외시킬 파일 목록을 의미한다. (node_mpdules)
+
+## 깃허브 액션
+
+> runner, action, event, jobs, steps 작성
+
+### 깃허브 액션은 마켓에서 가져다 쓰는게 더 좋다.
+
+## peerDependencies
+
+- 주로 서비스보다는 라이브러리와 패키지에서 자주 쓰이는 단위다.
+
+### 단순히 의존성을 업데이트한다고 해서 문제가 해결되지는 않는다.
+
+## 많이 사용하는 (활발) + 유지보수가 되는지 를 잘 따져보고 패키지를 선택하자

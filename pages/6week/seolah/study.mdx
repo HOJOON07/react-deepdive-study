@@ -1,1 +1,112 @@
-## 정리하기 파일
+# 08. 좋은 리액트 코드 작성을 위한 환경 구축하기
+
+## 8.1 ESLint 를 활용한 정적 코드 분석
+
+### ESLint 살펴보기
+
+**ESLint 는 어떻게 코드를 분석할까?**
+
+1. JS 코드를 문자열로 읽는다.
+2. JS 코드를 분석할 수 있는 파서(Parser)로 코드를 구조화 한다.
+3. 2번에서 구조화한 트리 AST(Abstract Syntax Tree)를 기준으로 각종 규칙을 대조한다.
+4. 규칙과 대조했을 때 이를 위반한 코드를 알리거나(Report) 수정한다(Fix).
+
+### eslint-plugin과 eslint-config
+
+**eslint-plugin**
+
+- eslint-plugin이라는 접두사로 시작하는 규칙을 모아놓은 패키지
+
+**eslint-config**
+
+- eslint-plugin을 묶어서 제공하는 패키지
+
+### 나만의 ESLint 규칙 만들기
+
+**이미 존재하는 규칙을 커스터마이징해서 적용하기: import React를 제거하기 위한 ESLint 규칙 만들기**
+
+**완전히 새로운 규칙 만들기: new Date 를 금지시키는 규칙**
+
+### 주의할 점
+
+**Prettier 와의 충돌**
+
+- Prettier란 코드의 포매팅을 도와주는 도구
+
+**규칙에 대한 예외 처리, 그리고 react-hooks/no-exhaustive-deps**
+
+- 일부 코드에서 특정 규칙을 임시로 제외시키고 싶다면, eslint-disable-주석 사용
+
+```jsx
+// 특정 줄만 제외
+console.log('hello world'); // eslint-disable-line no-console
+
+// 다음 줄 제외
+// eslint-disable-next-line no-console
+console.log('hello world');
+// 특정 여러 줄 제외
+
+/* eslint-disable no-console */
+console.log('JavaScript debug log');
+console.log('eslint is disabled now');
+/* eslint-enable no-console */
+
+// 파일 전체에서 제외
+/* eslint-disable no-console */
+console.log('hello world');
+```
+
+**ESLint의 버전 충돌**
+
+- 서로 다른 버전의 ESLint가 설치 되어 에러가 발생하면 ESLint를 peerDependencies로 설정하길 권장
+
+## 8.2 리액트 팀이 권장하는 리액트 테스트 라이브러리
+
+### React Testing Library 란?
+
+- DOM Testing Library를 기반으로 만들어진 테스팅 라이브러리
+- jsdom 사용 시 DOM을 불러오고 조작 가능
+  ⇒ 브라우저를 직접 실행해 리액트 컴포넌트가 원하는 대로 렌더링 되고 있는지 확인 가능
+
+### 자바스크립트 테스트의 기초
+
+1. 테스트할 함수나 모듈을 선정한다.
+2. 함수나 모듈이 반환하길 기대하는 값을 적는다.
+3. 함수나 모듈의 실제 반환 값을 적는다.
+4. 3번의 기대에 따라 2번의 결과가 일치하는지 확인한다.
+5. 기대하는 결과를 반환한다면 테스트는 성공이며, 만약 기대와 다른 결과를 반환하면 에러를 던진다.
+
+- 어설션(assertion): 테스트 결과를 확인할 수 있도록 도와주는 라이브러리
+
+### 리액트 컴포넌트 테스트 코드 작성하기
+
+**컴포넌트 테스트 순서**
+
+1. 컴포넌트를 렌더링한다.
+2. 필요하다면 컴포넌트에서 특정 액션을 수행한다.
+3. 컴포넌트 렌더링과 2번의 액션을 통해 기대하는 결과와 실제 결과를 비교한다.
+
+### 사용자 정의 훅 테스트하기
+
+- 테스트 코드 작성 추가 및 모든 테스트 케이스 추가의 단점을 해결하기 위한 라이브러리 ⇒ react-hooks-testing-library
+
+### 테스트를 작성하기에 앞서 고려해야 할 점
+
+- 테스트 커버리지 맹신은 금물
+  ⇒ TDD(Test Driven Development: 테스트 주도 개발)은 테스트를 우선시 하여도 서버 코드와 다르게 사용자의 입력이 자유롭기에 모든 상황을 커버해 테스트하기란 불가능
+- 때로는 TDD 대신 QA 를 믿고, 빠르게 개발할 수 밖에 없는 상황 존재
+- 애플리케이션에서 가장 취약하거나 중요한 부분을 파악하는 것이 최우선
+
+### 그 밖에 해볼 만한 여러 가지 테스트
+
+1. 유닛 테스트(Unit Test)
+
+   각각의 코드나 컴포넌트가 독립적으로 분리된 환경에서 의도된 대로 정확히 작동하는지 검증하는 테스트
+
+2. 통합 테스트(Integration Test)
+
+   유닛 테스트를 통과한 여러 컴포넌트가 묶여서 하나의 기능으로 정상적으로 작동하는지 확인하는 테스트
+
+3. 엔드 투 엔드(End to End Test)
+
+   흔히 E2E 테스트라 하며, 실제 사용자처럼 작동하는 로봇을 활용해 애플리케이션의 전체적인 기능을 확인하는 테스트

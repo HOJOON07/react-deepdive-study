@@ -15,7 +15,7 @@
   - `stopPropagation`를 호출해도 같은 요소에 묶인 다른 이벤트 리스너들은 그대로 호출된다. 따라서 React 16에서 컴포넌트 루트가 아래처럼 나뉘었고, '특정 루트'에 대한 이벤트 전파를 막고 싶을지라도 모든 이벤트가 document에 등록되므로 불가능하다.
     ![스크린샷 2024-03-16 오후 9.24.57.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/6dd09c7c-ed2b-43ce-9322-3dd2fe92dfac/d1b39fa6-3f60-4255-9c4c-fea088d1d69c/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA_2024-03-16_%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE_9.24.57.png)
 
-### 3. import React from 'react'가 더이상 필요 없다.
+### 3. `import React from 'react'`가 더이상 필요 없다.
 
 - 기존에는 JSX 변환을 위해 `import React from 'react'`가 필요했으나 리액트 17부터는 필요없다.
 - React 17부터 바벨 변환시 React.createElement가 사라졌고, jsx 변환에 필요한 `react/jsx-runtime` 모듈을 내부적으로 호출한다.

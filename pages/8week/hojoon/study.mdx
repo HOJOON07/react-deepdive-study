@@ -1,1 +1,54 @@
 ## 정리하기 파일
+
+## 리액트 16과 17의 이벤트 위임 방식이 변경되었다.
+
+- 16은 모든 이벤트가 document에 부착된다.
+- 17부터는 컴포넌트의 최상위로 변경되었다.
+- 이렇게 되면 이벤트 버블링으로 인한 혼선을 방지할 수 있다.
+- 16에선 볼 수 있는데, 17에선 못봄
+
+```jsx
+export default function App(){
+  useEffect(()=>{
+    document.addEventListner("click",(e)=>{
+      console.log("이벤트 올라옴")
+    })
+  },[])
+
+  function 안녕하세요(e){
+    e.stopPropagtion()
+    alert("안녕하세요)
+  }
+  return <button onClick={안녕하세요}>클릭 버튼</button>
+}
+```
+
+## useTransition
+
+- UI 변경을 가로막지 않고 상태를 업데이트할 수 있는 리액트 훅이다. 이를 활용하면 상태 업데이트를 긴급하지 않은 것으로 간주해 무거운 렌더링 작업을 조금 미룰 수 있으며, 사용자에게 조금더 나은 사용자 경험을 제공할 수 있다.
+
+```jsx
+const [isPending, startTransition] = useTransition();
+const [tab, setTab] = useState("about");
+
+function SelecTab(nextTab) {
+  startTransition(() => {
+    setTab(nextTab);
+  });
+}
+```
+
+## 넥스트 13
+
+- 파일 기반의 라우팅 시스템, app directory
+
+### 예약어들
+
+- layout
+- page
+- error
+- not-found
+- loading
+- route
+  - api 폴더 외에 다른 곳에 위치시켜도 작동함. 파일 디렉토리 기준으로 주소를 가진다.
+  - route.ts가 존재하는 폴더 내부에는 page 파일이 없어야 한다.

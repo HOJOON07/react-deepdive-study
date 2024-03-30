@@ -1,1 +1,316 @@
-## 정리하기 파일
+# 14. 웹사이트 보안을 위한 리액트와 웹페이지 보안 이슈
+
+## 14.1 리액트에서 발생하는 크로스 사이트 스크립팅(XSS)
+
+- 제 3자가 웹사이트에 악성 스크립트를 삽입하여 실행하는 보안 이슈
+
+### 14.1.1 DangerouslySetInnerHTML prop
+
+- 특정 브라우저의 DOM 을 특정한 내용으로 교체하는 방법
+
+```tsx
+const html = `<span><svg/onload=alert(origin)</span>`;
+
+function App() {
+  return <div dangerouslySetInnerHTML={{ __html: html }} />;
+}
+```
+
+- 이러한 방식으로 특정 DOM 에 보안을 위협하는 코드 삽입이 가능하므로 주의하여 사용 필요
+
+## 14.1.2 useRef 를 활용한 직접 삽입
+
+- useRef 를 활용하면 DOM 에 직접 내용을 삽입할 수 있으므로 innerHTML 과 동일한 보안 취약점이 발생한다
+
+```tsx
+const html = `<span><svg/onload=alert(origin)></span>`;
+
+function App() {
+  const divRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (divRef.current) {
+      divRef.current.innerHTML = html;
+    }
+  });
+  return <div ref={divRef} />;
+}
+```
+
+### 14.1.3 리액트에서 XXS 문제를 피하는 방법
+
+- 제 3자가 삽입할 수 있는 HTML 을 안전한 HTML 로 한번 치환하는 것으로 새니타이즈(sanitize) 또는 이스케이프(espace)라 불린다
+- html 태그에서 허용할 목록을 하나하나 확인하여 보안 이슈가 발생할 부분을 제거하는 형태
+- 직접 구현하기 보다는 npm 라이브러리 사용 추천
+- 또한 Query, GET 메소드의 파라마터, 서버 데이터 등 모든 코드에 대한 주의 및 방비가 필요하다
+
+## 14.2 getServerSideProps 와 서버 컴포넌트를 주의하자
+
+- 서버에서 사용되는 정보가 클라이언트에 바로 노출될 수 있으므로 주의가 필요하다
+
+- 쿠키 유효성을 체크하는 아래의 코드
+
+```tsx
+export default function App({ cookie }: { cookie: string }) {
+  if (!validateCookie(cookie)) {
+    Router.replace(/*...*/);
+    return null;
+  }
+
+  /* do something... */
+}
+export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
+  const cookie = ctx.req.headers.cookie || "";
+
+  return { props: { cookie } };
+};
+```
+
+- getServerSideProps 가 처리하는 모든 props 값은 사용자의 HTML 에 기록 되므로 주의있는 사용이 필요하다
+
+- 위의 코드를 수정한 코드, 쿠키 전체 값이 아닌 필요한 token 만 잘라서 사용하였으며 예외 처리 부분도 서버에서 처리하여 보안 문제와 효율성을 전부 해결
+
+```tsx
+export default function App({ token }: { token: string }) {
+  const user = JSON.parse(window.atob(token.split(".")[1]));
+  const user_id = user.id;
+  /* do something... */
+}
+export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
+  const cookie = ctx.req.headers.cookie || "";
+  const token = validateCookie(cookie);
+
+  if (!token) {
+    return { redirect: { destination: "/404", permanent: false } };
+  }
+
+  return { props: { token } };
+};
+```
+
+## 14.3 a 태그의 값에 적절한 제한을 둬야 한다
+
+- a 태그의 href 에 javascript 를 넣어 a 태그의 기본 기능을 막고 onClick 을 실행시키는 경우가 있다
+- 이러한 경우도 XSS 의 위험성에 노출 되므로 처리 필요
+
+```tsx
+function App() {
+  return (
+    <>
+      <a href="javascript:alert('XSS');">링크</a>
+    </>
+  );
+}
+```
+
+## 14.4 HTTP 보안 헤더 설정하기
+
+### 14.4.1 Strict-Tranport-Security
+
+- Strict-Tranport-Security 응답 헤더는 모든 사이트가 HTTPS 를 통해 접근해야 하며, 만약 HTTP 로 접근 시 모든 시도를 HTTPS 로 변경
+
+```bash
+Strict-Tranport-Security: max-age=<expire-time>; includeSubDomains
+```
+
+- exprie-time : 해당 설정을 브라우저가 기억해야할 타임, 해당 기간 동안에는 Strict-Tranport-Security 특성 발휘
+- includeSubDomains 을 통해 모든 하위 도메인에 적용 가능
+
+### 14.4.2 X-XSS-Protection
+
+- X-XSS-Protection 은 비표준 기술로 사파리와 구형 브라우저에서만 제공되는 기능
+- XSS 취약점이 발경되면 즉시 페이지 로딩을 중단하는 헤더
+
+### 14.4.3 X-Frame-Options
+
+- 페이지를 frame, iframe, embed, object 내부에서 렌더링을 허용할지 여부 설정
+- 사용자가 iframe 위의 페이지를 실제 페이지로 착각하여 개인 정보 노출 가능성이 있음
+
+```bash
+X-Frame-Options : DENY          # 무조건 불가능
+X-Frame-Options : SAMEORIGIN    # 같은 origin 의 페이지만 가능
+```
+
+### 14.4.4 Permissions-Policy
+
+- 웹사이트에서 사용할 수 있는 기능과 없는 기능을 명시적으로 선언하는 헤더
+- 브라우저 기능, API, GPS, 카메라 등에 대한 접근을 미리 선언 가능
+
+```bash
+# 모든 geolocation 사용을 막는다.
+Permissions-Policy: geolocation=()
+
+# geolocation을 페이지 자신과 몇 가지 페이지에 대해서만 허용한다.
+Permissions-Policy: geolocation=(self "https://a.yceffort.kr" "https://b.yceffort.kr")
+
+# 카메라는 모든 곳에서 허용한다.
+Permissions-Policy: camera=*;
+
+# pip 기능을 막고, geolocation은 자신과 특정 페이지만 허용하며, # 카메라는 모든 곳에서 허용한다.
+Permissions-Policy: picture-in-picture=(), geolocation=(self https://yceffort.kr), camera=*;
+```
+
+### 14.4.5 X-Content-Type-Options
+
+- MIME(Multipurpose Internet Mail Extensions) : 메일을 전송할 때 사용하던 인코딩 옵션
+- 해당 옵션을 통해 브라우저가 특정 파일을 읽어서 HTML 로 파싱하는 부분에 대한 제한 설정이 가능
+- 따라서, 웹 서버가 브라우저에게 강제로 특정 파일을 읽는 것을 막아준다(ex. jpg 에 스크립트를 심어 실행하도록 유도)
+
+### 14.4.6 Referrer-Policy
+
+\*\* [p. 892] 오타 ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ 우리나라로 따지면 참죠 규칙 정도 되겠군요 ㅎㅎㅎ
+
+- 현재 요청을 보낸 페이지의 주소가 나타나는 헤더, 사용자가 어디에서 방문했는지 인식이 가능한 헤더
+- 다만, 사용자 입장에서는 원치 않는 정보를 노출 될 수 있으므로 주의가 필요하다
+- 해당 정보를 기반으로 cross-origin 을 판단
+
+### 14.4.7 Content-Security-Policy
+
+#### \*-src
+
+- 다양한 src 를 제어할 수 있는 지시문
+
+```bash
+Content-Security-Policy: font-src <source>;
+Content-Security-Policy: font-src <source> <source>;
+```
+
+- 위와 같이 선언하여 font 를 가져오는 출처의 제한이 가능
+- script / style / font / img / connect(스크립트로 접근하는 URL) / worker / object / media / manifest / frame / prefetch / child(frame 또는 iframe) 에 대한 출처 제한이 가능하다
+- 아래 처럼 default 를 사용하여 한 번에 처리 가능
+
+```bash
+Content-Security-Policy: default-src <source>;
+Content-Security-Policy: default-src <source> <source>;
+```
+
+#### form-action
+
+```html
+<meta http-equiv="Content-Security-Policy" content="form-action 'none'" />
+```
+
+- 위와 같이 form-action 자체를 막을 수 있음
+
+### 14.4.8 보안 헤더 설정하기
+
+#### Next.js
+
+- next.config.js 에서 HTTP 경로별로 보안 헤더 적용 가능
+- 가능한 설정 값들
+  - X-DNS-Prefetch-Control
+  - Strict-Transport-Security
+  - X-XSS-Protection
+  - X-Frame-Options
+  - Permissions-Policy
+  - X-Content-Type-Options
+  - Referrer-Policy
+  - Content-Security-Policy
+
+```tsx
+const securityHeaders = [
+  {
+    key: "key",
+    value: "value",
+  },
+];
+
+module.exports = {
+  async headers() {
+    return [
+      {
+        // 모든 주소에 설정한다.
+        source: "/:path*",
+        headers: securityHeaders,
+      },
+    ];
+  },
+};
+```
+
+#### NGINX
+
+- add_header 지시자를 사용하여 헤더 추가 가능
+
+```
+location / {
+  # ...
+  add_header X-XSS-Protection "1; mode=block";
+}
+```
+
+### 14.4.9 보안 헤더 확인하기
+
+- https://securityheaders.com 에서 확인이가능
+
+\*\* [p. 898] 인프런은 F, 패캠은 B 네요 ㅎㅎㅎㅎ
+
+## 14.5 취약점이 있는 패키지의 사용을 피하자
+
+- Dependabot 같은 기능을 사용하여 취약점 발견 & 해결 필요
+
+## 14.6 OWASP Top 10
+
+- Open Worldwide Application Security Project 의 약자로 주기적으로 10대 웹 어플리케이션 취약점을 공개
+- 해당 내용을 주기적으로 확인하여 보안 문제에 대한 대비가 필요
+
+# 15. 마치며
+
+## 15.1 리액트 프로젝트를 시작할 때 고려해야 할 사항
+
+### 15.1.1 유지보수 중인 서비스라면 리액트 버전을 최소 16.8.6 에서 최대 17.0.2 로 올려두자
+
+- 리액트 16.8 에서 리액트 훅 도입 및 많은 변화가 있었으므로 업그레이드 필요
+- 다만 기존 클래스 컴포넌트를 함수형으로 리팩토링 할 필요는 없다
+
+### 15.1.2 인터넷 익스플로러 11 지원을 목표로 한다면 각별히 더 주의를 기한다
+
+- 리액트 18 지원 X
+- Next 13 지원 X
+- Query-string 6 지원 X
+
+\*\* [p. 904] 걍 버립시다 🤣
+
+### 15.1.3 서버 사이드 렌더링 어플리케이션을 우선적으로 고려한다
+
+- 모바일 기기기 확대되고 있는 만큼 클라이언트 성능의 차이가 심하므로 SSR 을 우선 고려 하자
+
+### 15.1.4 상태 관리 라이브러리는 꼭 필요할 때만 사용한다
+
+### 15.1.5 리액트 의존성 라이브러리 설치를 조심한다
+
+- peerDependencies 가 설치하고자하는 프로젝트의 리액트 버전과 맞는지 확인 필요
+
+## 15.2 언젠가 사라질 수도 있는 리액트
+
+### 15.2.1 리액트는 그래서 정말 완벽한 라이브러리인가?
+
+#### 클래스 컴포넌트에서 함수 컴포넌트로 넘어오면서 느껴지는 혼란
+
+- 리액트가 고도화 되면서 리액트 만의 문법으로 인하여 JS 와 동떨어지고 있다
+
+#### 너무 방대한 자유가 주는 혼란
+
+- 다양한 방법을 전부 지원하다보니 오히려 혼안을 준다
+
+### 15.2.2 오픈소스 생태계의 명과 암
+
+#### 페이스북 라이선스 이슈
+
+- 리액트는 페이스북에 의해 자유로운 MIT 라이선스가 아닌 BSD+Patents 라이선스로 제공 되므로 페이스북의 선택에 의해 언제든 라이선스 종료가 가능했다
+- 2017년에 아파치 재단에서 BSD+Patents 를 금지시켜 페이스북도 한동안 고집을 유지하다 해당 라이선스를 포기하고 MIT 라이선스로 넘어갔다
+
+#### 오픈소스는 무료로 걔속 제공될 수 있는가? colors.js, faker.js, 그리고 바벨
+
+- 돈 문제는 항상 발생한다
+
+\*\* [p. 913] No more free work from Marak - Pay Me or Fork This
+\*\* 어찌 생각하시나요?
+
+### 15.2.3 JQuery, AngularJS, React 그리고 다음은 무엇인가?
+
+- 스프링, ASP.NET, Rails, PHP 등 웹 프레임워크에서 프론트엔드 영역이 분리 되어 각광 받은 것은 얼마 안되었다
+- 그리고 시장고 상황은 항상 변화한다
+
+### 15.2.4 웹 개발자로서 가져야 할 유연한 자세
+
+\*\* [p. 917] 뭐 일단, 리액트가 대세니 이거 잘하다가 또 바뀌면 넘어가야져 ㅋㅋ

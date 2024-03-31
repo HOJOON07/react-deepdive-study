@@ -1,0 +1,238 @@
+# React Tracked
+
+- 상태 사용 추적 (state usage tracking) 라이브러리
+- Technically, it uses Proxies underneath, and it works not only for the root level of the object but also for deep nested objects.
+
+## Proxy?
+
+> Proxy 객체를 사용하면 한 객체에 대한 기본 작업을 가로채고 재정의하는 프록시를 만들 수 있습니다.
+
+### 설명
+
+Proxy 객체를 사용하면 원래 Object 대신 사용할 수 있는 객체를 만들지만, 이 객체의 속성 가져오기, 설정 및 정의와 같은 기본 객체 작업을 재정의할 수 있습니다. 프록시 객체는 일반적으로 속성 액세스를 기록하고, 입력의 유효성을 검사하고, 형식을 지정하거나, 삭제하는 데 사용됩니다.
+
+두 개의 매개변수를 사용하여 Proxy를 생성합니다.
+
+- target: 프록시할 원본 객체
+- handler: 가로채는 작업과 가로채는 작업을 재정의하는 방법을 정의하는 객체입니다.
+
+```js
+const target = {
+  message1: "hello",
+  message2: "everyone",
+};
+
+const handler1 = {};
+
+const proxy1 = new Proxy(target, handler1);
+```
+
+- 핸들러가 비어 있기 때문에 이 프록시는 원래 대상처럼 작동합니다.
+
+```js
+console.log(proxy1.message1); // hello
+console.log(proxy1.message2); // everyone
+```
+
+```
+const target = {
+  message1: "hello",
+  message2: "everyone",
+};
+
+const handler2 = {
+  get(target, prop, receiver) {
+    return "world";
+  },
+};
+
+const proxy2 = new Proxy(target, handler2);
+```
+
+```js
+console.log(proxy2.message1); // world
+console.log(proxy2.message2); // world
+```
+
+- Reflect 클래스의 도움으로 일부 접근자에게 원래 동작을 제공하고 다른 접근자를 재정의할 수 있습니다.
+
+```js
+const target = {
+  message1: "hello",
+  message2: "everyone",
+};
+
+const handler3 = {
+  get(target, prop, receiver) {
+    if (prop === "message2") {
+      return "world";
+    }
+    return Reflect.get(...arguments);
+  },
+};
+
+const proxy3 = new Proxy(target, handler3);
+
+console.log(proxy3.message1); // hello
+console.log(proxy3.message2); // world
+```
+
+## Quick Start
+
+- context api는 context가 만약 객체일때 객체의 일부 프로퍼티만 업데이트 된다하더라도 해당 Context를 가져다가 사용하는 모든 Consumer가 리렌더링 된다는 것이다.
+
+### Create a global state with pure React
+
+```js
+import React, { createContext, useState, useContext } from "react";
+
+const initialState = {
+  count: 0,
+  text: "hello",
+};
+
+const useMyState = () => useState(initialState);
+
+const MyContext = createContext(null);
+
+export const useSharedState = () => {
+  const value = useContext(MyContext);
+  if (value === null) throw new Error("Please add SharedStateProvider");
+  return value;
+};
+
+export const SharedStateProvider = ({ children }) => (
+  <MyContext.Provider value={useMyState()}>{children}</MyContext.Provider>
+);
+```
+
+```jsx
+import React from "react";
+
+import { useSharedState } from "./store";
+
+const Counter = () => {
+  const [state, setState] = useSharedState();
+  const increment = () => {
+    setState((prev) => ({ ...prev, count: prev.count + 1 }));
+  };
+  return (
+    <div>
+      {state.count}
+      <button onClick={increment}>+1</button>
+    </div>
+  );
+};
+
+export default Counter;
+```
+
+```jsx
+import React from "react";
+
+import { useSharedState } from "./store";
+
+const TextBox = () => {
+  const [state, setState] = useSharedState();
+  const setText = (text) => {
+    setState((prev) => ({ ...prev, text }));
+  };
+  return (
+    <div>
+      {state.text}
+      <input value={state.text} onChange={(e) => setText(e.target.value)} />
+    </div>
+  );
+};
+
+export default TextBox;
+```
+
+## Use React Tracked instead of bare context
+
+```jsx
+import { useState } from "react";
+import { createContainer } from "react-tracked";
+
+const initialState = {
+  count: 0,
+  text: "hello",
+};
+
+const useMyState = () => useState(initialState);
+
+export const { Provider: SharedStateProvider, useTracked: useSharedState } =
+  createContainer(useMyState);
+```
+
+## Counter
+
+```jsx
+const Counter = () => {
+  const [state, setState] = useSharedState();
+  const increment = () => {
+    setState((prev) => ({ ...prev, count: prev.count + 1 }));
+  };
+  return (
+    <div>
+      {state.count}
+      <button onClick={increment}>+1</button>
+      {Math.random()}
+    </div>
+  );
+};
+```
+
+### React Tracked 버전에서는 증가 버튼을 클릭할 때만 난수가 변경됩니다. 텍스트 상자에 입력해도 변경되지 않습니다.
+
+## useState에서 쓰는 방법
+
+```jsx
+import { useState } from "react";
+import { createContainer } from "react-tracked";
+
+const useValue = () => useState({});
+
+export const {
+  Provider,
+  useTrackedState,
+  useUpdate: useSetState,
+} = createContainer(useValue);
+```
+
+### EditPerson
+
+```jsx
+import React from "react";
+
+import { useSetState, useTrackedState } from "./store";
+
+const EditPerson = () => {
+  const setState = useSetState();
+  const state = useTrackedState();
+  const setFirstName = (e) => {
+    const firstName = e.target.value;
+    setState((prev) => ({ ...prev, firstName }));
+  };
+  const setLastName = (e) => {
+    const lastName = e.target.value;
+    setState((prev) => ({ ...prev, lastName }));
+  };
+  return (
+    <div>
+      <div>
+        First Name:
+        <input value={state.firstName || ""} onChange={setFirstName} />
+      </div>
+      <div>
+        Last Name:
+        <input value={state.lastName || ""} onChange={setLastName} />
+      </div>
+    </div>
+  );
+};
+
+export default EditPerson;
+```
+
+### useReducer, redux, zustand도 지원한다.
